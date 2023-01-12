@@ -25,7 +25,6 @@ func AuthRequire(config Config) fiber.Handler {
 		store := config.Session.Get(ctx)
 
 		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
-			//already login
 			log.Printf("Already login")
 			return ctx.Next()
 		}
@@ -37,6 +36,7 @@ func AuthRequire(config Config) fiber.Handler {
 		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
 		if err != nil {
 			log.Printf(" ERROR parsing query: %v", err)
+			return ctx.Redirect(config.LoginUrl)
 		}
 
 		onUrl.AppId = q.Get("appid")
@@ -46,7 +46,7 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
-		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s", config.LoginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View)
+		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s&PROFILENAME=%s", config.LoginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View, onUrl.ProfileName)
 
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
 			return ctx.Redirect(loginUrl)
@@ -57,7 +57,7 @@ func AuthRequire(config Config) fiber.Handler {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Printf(" PANIC client do %v", err.Error())
+			log.Printf("Error user authentication: %v", err)
 			return ctx.Redirect(loginUrl)
 		}
 		defer resp.Body.Close()
@@ -65,11 +65,10 @@ func AuthRequire(config Config) fiber.Handler {
 		userSessionDetail := SessionDetails{}
 		err = json.NewDecoder(resp.Body).Decode(&userSessionDetail)
 		if err != nil {
-			log.Printf(" PANIC SessionDetails resp error %v", err)
+			log.Printf("Session Details resp error %v", err)
 			return ctx.Redirect(loginUrl)
 		}
 
-		log.Printf(" Resp.StatusCode %v", resp.StatusCode)
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 			log.Printf(" PANIC PREPARE TO REDIRECT resp.StatusCode %v", resp.StatusCode)
 			return ctx.Redirect(loginUrl)
@@ -80,7 +79,6 @@ func AuthRequire(config Config) fiber.Handler {
 		defer store.Save()
 
 		store.Set("VIEW", onUrl.View)
-		//sess.Set("USER_SESSION_DETAIL", userSessionDetail)
 		store.Set("AccountId", userSessionDetail.AccountId)
 		store.Set("FirstName", userSessionDetail.FirstName)
 		store.Set("LastName", userSessionDetail.LastName)
