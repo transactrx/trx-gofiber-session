@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/session/v2"
-	"github.com/gofiber/session/v2/provider/memcache"
 	"log"
 	"net/http"
 	"net/url"
@@ -24,22 +22,15 @@ func (s *Session) GetTest() string {
 func AuthRequire(c *fiber.Ctx, config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
-		log.Print("AuthRequire working as a middlewear")
+		store := config.Session.Get(ctx)
 
-		memCachedConfig := memcache.Config{
-			KeyPrefix:    config.MemcachedSeed,
-			ServerList:   config.MemcachedServerList,
-			MaxIdleConns: config.MaxIdleConns,
-		}
-		fmt.Print(config)
-		provider, err := memcache.New(memCachedConfig)
-		if err != nil {
-			log.Panic(err)
+		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
+			//already login
+			log.Printf("Already login")
+			return ctx.Next()
 		}
 
-		var sessionStore *session.Session = session.New(session.Config{
-			Provider: provider,
-		})
+		log.Print("New Session, verify identity with IdentityService!")
 
 		onUrl := IdentityObj{}
 
@@ -85,18 +76,18 @@ func AuthRequire(c *fiber.Ctx, config Config) fiber.Handler {
 		}
 
 		userSessionDetail.AppView = onUrl.View
-		sess := sessionStore.Get(c)
-		defer sess.Save()
 
-		sess.Set("VIEW", onUrl.View)
+		defer store.Save()
+
+		store.Set("VIEW", onUrl.View)
 		//sess.Set("USER_SESSION_DETAIL", userSessionDetail)
-		sess.Set("AccountId", userSessionDetail.AccountId)
-		sess.Set("FirstName", userSessionDetail.FirstName)
-		sess.Set("LastName", userSessionDetail.LastName)
-		sess.Set("DefaultProfile", userSessionDetail.DefaultProfile)
-		sess.Set("AppView", userSessionDetail.AppView)
-		sess.Set("TrxIsat", userSessionDetail.TrxIsat)
-		sess.Set("UserId", userSessionDetail.UserId)
+		store.Set("AccountId", userSessionDetail.AccountId)
+		store.Set("FirstName", userSessionDetail.FirstName)
+		store.Set("LastName", userSessionDetail.LastName)
+		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
+		store.Set("AppView", userSessionDetail.AppView)
+		store.Set("TrxIsat", userSessionDetail.TrxIsat)
+		store.Set("UserId", userSessionDetail.UserId)
 
 		if err := ctx.Next(); err != nil {
 			return err

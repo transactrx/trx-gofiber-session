@@ -1,11 +1,15 @@
 package gofiber_session
 
+import (
+	"fmt"
+	"github.com/gofiber/session/v2"
+	"strings"
+)
+
 type Config struct {
-	MemcachedServerList []string
-	MemcachedSeed       string
-	MaxIdleConns        int
-	LoginUrl            string
-	CredentialUrl       string
+	LoginUrl      string
+	CredentialUrl string
+	Session       *session.Session
 }
 
 type IdentityObj struct {
@@ -27,4 +31,23 @@ type SessionDetails struct {
 	DefaultProfile string `json:"defaultProfile"`
 	AppView        string `json:"appView"`
 	TrxIsat        string `json:"trxIsat"`
+}
+
+func CreateConfig(loginUrl string, credentialUrl string, session *session.Session) (Config, error) {
+
+	if len(strings.TrimSpace(loginUrl)) == 0 {
+		return Config{}, fmt.Errorf("loginUrl is required")
+	}
+	if len(strings.TrimSpace(credentialUrl)) == 0 {
+		return Config{}, fmt.Errorf("credentialUrl is required")
+	}
+	if session == nil {
+		return Config{}, fmt.Errorf("session is required")
+	}
+
+	return Config{
+		LoginUrl:      loginUrl,
+		CredentialUrl: credentialUrl,
+		Session:       session,
+	}, nil
 }
