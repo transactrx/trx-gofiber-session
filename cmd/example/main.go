@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	sess := gofiber_session.Session{Test: "hello world"}
+	sess := gofiber_session.Session{Test: "hello world!"}
 
 	fmt.Println(sess.GetTest())
 }
