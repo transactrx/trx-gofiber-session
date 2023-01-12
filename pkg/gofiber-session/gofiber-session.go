@@ -55,13 +55,13 @@ func AuthRequire(c *fiber.Ctx, config Config) fiber.Handler {
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
-		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s", config.loginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View)
+		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s", config.LoginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View)
 
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
 			return c.Redirect(loginUrl)
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, config.credentialUrl, bytes.NewBuffer([]byte(onUrl.TrxISAT)))
+		req, _ := http.NewRequest(http.MethodPost, config.CredentialUrl, bytes.NewBuffer([]byte(onUrl.TrxISAT)))
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

@@ -4,8 +4,8 @@ type Config struct {
 	MemcachedServerList []string
 	MemcachedSeed       string
 	MaxIdleConns        int
-	loginUrl            string
-	credentialUrl       string
+	LoginUrl            string
+	CredentialUrl       string
 }
 
 type IdentityObj struct {
