@@ -19,7 +19,7 @@ func (s *Session) GetTest() string {
 	return s.Test
 }
 
-func AuthRequire(c *fiber.Ctx, config Config) fiber.Handler {
+func AuthRequire(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		store := config.Session.Get(ctx)
@@ -34,7 +34,7 @@ func AuthRequire(c *fiber.Ctx, config Config) fiber.Handler {
 
 		onUrl := IdentityObj{}
 
-		q, err := url.ParseQuery(string(c.Request().URI().QueryString()))
+		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
 		if err != nil {
 			log.Printf(" ERROR parsing query: %v", err)
 		}
@@ -49,7 +49,7 @@ func AuthRequire(c *fiber.Ctx, config Config) fiber.Handler {
 		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s", config.LoginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View)
 
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
-			return c.Redirect(loginUrl)
+			return ctx.Redirect(loginUrl)
 		}
 
 		req, _ := http.NewRequest(http.MethodPost, config.CredentialUrl, bytes.NewBuffer([]byte(onUrl.TrxISAT)))
@@ -58,7 +58,7 @@ func AuthRequire(c *fiber.Ctx, config Config) fiber.Handler {
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf(" PANIC client do %v", err.Error())
-			return c.Redirect(loginUrl)
+			return ctx.Redirect(loginUrl)
 		}
 		defer resp.Body.Close()
 
@@ -66,13 +66,13 @@ func AuthRequire(c *fiber.Ctx, config Config) fiber.Handler {
 		err = json.NewDecoder(resp.Body).Decode(&userSessionDetail)
 		if err != nil {
 			log.Printf(" PANIC SessionDetails resp error %v", err)
-			return c.Redirect(loginUrl)
+			return ctx.Redirect(loginUrl)
 		}
 
 		log.Printf(" Resp.StatusCode %v", resp.StatusCode)
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 			log.Printf(" PANIC PREPARE TO REDIRECT resp.StatusCode %v", resp.StatusCode)
-			return c.Redirect(loginUrl)
+			return ctx.Redirect(loginUrl)
 		}
 
 		userSessionDetail.AppView = onUrl.View
