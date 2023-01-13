@@ -23,7 +23,6 @@ func AuthRequire(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		store := config.Session.Get(ctx)
-		defer store.Save()
 
 		onUrl := IdentityObj{}
 
@@ -33,20 +32,23 @@ func AuthRequire(config Config) fiber.Handler {
 			return ctx.Redirect(config.LoginUrl)
 		}
 
-		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
-			log.Printf("Already login")
-			store.Set("VIEW", onUrl.View)
-			return ctx.Next()
-		}
-
-		log.Print("New Session, verify identity with IdentityService!")
-
 		onUrl.AppId = q.Get("appid")
 		onUrl.Mode = q.Get("mode")
 		onUrl.TrxISAT = q.Get("TRX-ISAT")
 		onUrl.View = q.Get("view")
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
+
+		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
+			log.Printf("Already login")
+			store.Set("VIEW", onUrl.View)
+			store.Save()
+			log.Printf("New View on store: %s", store.Get("VIEW"))
+			return ctx.Next()
+		}
+
+		log.Print("New Session, verify identity with IdentityService!")
+		defer store.Save()
 
 		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s&PROFILENAME=%s", config.LoginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View, onUrl.ProfileName)
 
