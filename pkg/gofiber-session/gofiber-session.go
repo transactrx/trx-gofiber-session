@@ -45,7 +45,6 @@ func AuthRequire(config Config) fiber.Handler {
 				store.Set("VIEW", onUrl.View)
 				store.Save()
 			}
-			log.Printf("New View on store: %s", store.Get("VIEW").(string))
 			return ctx.Next()
 		}
 
