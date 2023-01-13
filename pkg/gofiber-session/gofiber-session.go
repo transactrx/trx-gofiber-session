@@ -39,13 +39,15 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
-		//if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
-		//	log.Printf("Already login")
-		//	store.Set("VIEW", onUrl.View)
-		//	store.Save()
-		//	log.Printf("New View on store: %s", store.Get("VIEW").(string))
-		//	return ctx.Next()
-		//}
+		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
+			log.Printf("Already login")
+			if len(onUrl.View) > 0 {
+				store.Set("VIEW", onUrl.View)
+				store.Save()
+			}
+			log.Printf("New View on store: %s", store.Get("VIEW").(string))
+			return ctx.Next()
+		}
 
 		log.Print("New Session, verify identity with IdentityService!")
 		defer store.Save()
@@ -78,14 +80,17 @@ func AuthRequire(config Config) fiber.Handler {
 			return ctx.Redirect(loginUrl)
 		}
 
-		userSessionDetail.AppView = onUrl.View
+		if len(onUrl.View) > 0 {
+			userSessionDetail.AppView = onUrl.View
+			store.Set("VIEW", onUrl.View)
+			store.Set("AppView", userSessionDetail.AppView)
+		}
 
-		store.Set("VIEW", onUrl.View)
 		store.Set("AccountId", userSessionDetail.AccountId)
 		store.Set("FirstName", userSessionDetail.FirstName)
 		store.Set("LastName", userSessionDetail.LastName)
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
-		store.Set("AppView", userSessionDetail.AppView)
+
 		store.Set("TrxIsat", userSessionDetail.TrxIsat)
 		store.Set("UserId", userSessionDetail.UserId)
 
