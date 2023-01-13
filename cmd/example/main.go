@@ -5,11 +5,12 @@ import (
 	"github.com/gofiber/session/v2"
 	gofiber_session "github.com/transactrx/trx-gofiber-session/pkg/gofiber-session"
 	"log"
+	"time"
 )
 
 func main() {
 
-	store := session.New()
+	store := session.New(session.Config{Expiration: time.Minute * 1})
 
 	config, err := gofiber_session.CreateConfig("https://login.transactrx.com", "https://login.transactrx.com/credential", store)
 	if err != nil {
@@ -24,5 +25,5 @@ func main() {
 	})
 
 	app.Listen(":3000")
-	
+
 }

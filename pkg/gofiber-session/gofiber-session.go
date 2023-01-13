@@ -23,13 +23,7 @@ func AuthRequire(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		store := config.Session.Get(ctx)
-
-		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
-			log.Printf("Already login")
-			return ctx.Next()
-		}
-
-		log.Print("New Session, verify identity with IdentityService!")
+		defer store.Save()
 
 		onUrl := IdentityObj{}
 
@@ -38,6 +32,14 @@ func AuthRequire(config Config) fiber.Handler {
 			log.Printf(" ERROR parsing query: %v", err)
 			return ctx.Redirect(config.LoginUrl)
 		}
+
+		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
+			log.Printf("Already login")
+			store.Set("VIEW", onUrl.View)
+			return ctx.Next()
+		}
+
+		log.Print("New Session, verify identity with IdentityService!")
 
 		onUrl.AppId = q.Get("appid")
 		onUrl.Mode = q.Get("mode")
@@ -76,14 +78,12 @@ func AuthRequire(config Config) fiber.Handler {
 
 		userSessionDetail.AppView = onUrl.View
 
-		defer store.Save()
-
 		store.Set("VIEW", onUrl.View)
 		store.Set("AccountId", userSessionDetail.AccountId)
 		store.Set("FirstName", userSessionDetail.FirstName)
 		store.Set("LastName", userSessionDetail.LastName)
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
-		store.Set("AppView", userSessionDetail.AppView)
+		//store.Set("AppView", userSessionDetail.AppView)
 		store.Set("TrxIsat", userSessionDetail.TrxIsat)
 		store.Set("UserId", userSessionDetail.UserId)
 
