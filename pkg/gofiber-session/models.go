@@ -45,7 +45,7 @@ func CreateConfig(loginUrl string, credentialUrl string, session *session.Sessio
 	if session == nil {
 		return Config{}, fmt.Errorf("session is required")
 	}
-	
+
 	if len(strings.TrimSpace(cookieName)) == 0 {
 		return Config{}, fmt.Errorf("cookieName is required")
 	}
@@ -54,5 +54,6 @@ func CreateConfig(loginUrl string, credentialUrl string, session *session.Sessio
 		LoginUrl:      loginUrl,
 		CredentialUrl: credentialUrl,
 		Session:       session,
+		cookieName:    cookieName,
 	}, nil
 }
