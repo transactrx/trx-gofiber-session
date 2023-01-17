@@ -10,6 +10,7 @@ type Config struct {
 	LoginUrl      string
 	CredentialUrl string
 	Session       *session.Session
+	cookieName    string
 }
 
 type IdentityObj struct {
@@ -33,7 +34,7 @@ type SessionDetails struct {
 	TrxIsat        string `json:"trxIsat"`
 }
 
-func CreateConfig(loginUrl string, credentialUrl string, session *session.Session) (Config, error) {
+func CreateConfig(loginUrl string, credentialUrl string, session *session.Session, cookieName string) (Config, error) {
 
 	if len(strings.TrimSpace(loginUrl)) == 0 {
 		return Config{}, fmt.Errorf("loginUrl is required")
@@ -43,6 +44,10 @@ func CreateConfig(loginUrl string, credentialUrl string, session *session.Sessio
 	}
 	if session == nil {
 		return Config{}, fmt.Errorf("session is required")
+	}
+	
+	if len(strings.TrimSpace(cookieName)) == 0 {
+		return Config{}, fmt.Errorf("cookieName is required")
 	}
 
 	return Config{
