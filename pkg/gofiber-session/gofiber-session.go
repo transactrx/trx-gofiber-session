@@ -52,7 +52,7 @@ func AuthRequire(config Config) fiber.Handler {
 		defer store.Save()
 
 		//Check if already logged In and Update view if it is required
-		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" && onUrl.TrxISAT == store.Get("TrxIsat") {
+		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" /*&& onUrl.TrxISAT == store.Get("TrxIsat") */ {
 			log.Printf("session TrxIsat: %s", store.Get("TrxIsat"))
 			log.Printf("Already login")
 			if len(onUrl.View) > 0 {
