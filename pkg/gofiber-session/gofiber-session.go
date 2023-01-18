@@ -68,6 +68,7 @@ func AuthRequire(config Config) fiber.Handler {
 		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s&PROFILENAME=%s&mode=%s", config.LoginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View, onUrl.ProfileName, onUrl.Mode)
 
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
+			log.Printf("Redirect loginUrl: %s", loginUrl)
 			return ctx.Redirect(loginUrl)
 		}
 
