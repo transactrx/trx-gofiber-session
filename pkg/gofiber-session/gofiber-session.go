@@ -23,12 +23,11 @@ func AuthRequire(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		const INVALID_ACCESS = "INVALID-ACCESS"
-		//Check Authorize Call's Source Cookies
-		log.Printf("comming config.cookieName: %s, cookie value: %s", config.cookieName, ctx.Cookies(config.cookieName, INVALID_ACCESS))
+		//Check cookies - for authorize call's source
 		if ctx.Cookies(config.cookieName, INVALID_ACCESS) == INVALID_ACCESS {
 			//ctx.Redirect(config.LoginUrl)
 			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorize Access"})
-			return fmt.Errorf("Unauthorize Access")
+			return fmt.Errorf("Unauthorized Access")
 		}
 
 		store := config.Session.Get(ctx)
@@ -39,10 +38,10 @@ func AuthRequire(config Config) fiber.Handler {
 		if err != nil {
 			log.Printf(" ERROR parsing query: %v", err)
 			ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
-			return fmt.Errorf("Unauthorize Access")
+			return fmt.Errorf("Unauthorized Access")
 		}
 
-		//Read URL querystrig
+		//Read URL Querystring
 		onUrl.AppId = q.Get("appid")
 		onUrl.Mode = q.Get("mode")
 		onUrl.TrxISAT = q.Get("TRX-ISAT")
@@ -53,7 +52,7 @@ func AuthRequire(config Config) fiber.Handler {
 		defer store.Save()
 
 		//Check if already logged In and Update view if it is required
-		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" {
+		if store.Get("TrxIsat") != nil && store.Get("TrxIsat") != "" && onUrl.TrxISAT == store.Get("TrxIsat") {
 			log.Printf("session TrxIsat: %s", store.Get("TrxIsat"))
 			log.Printf("Already login")
 			if len(onUrl.View) > 0 {
