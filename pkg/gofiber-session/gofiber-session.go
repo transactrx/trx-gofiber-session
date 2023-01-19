@@ -23,9 +23,12 @@ func AuthRequire(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		const INVALID_ACCESS = "INVALID-ACCESS"
+		const STORED_COOKIE_NAME = "COOKIE_TK"
+
+		cookieTk := ctx.Cookies(config.cookieName, INVALID_ACCESS)
+		log.Printf(" Cookie  Name: %s, Value: %v", config.cookieName, cookieTk)
 		//Check cookies - for authorize call's source
-		if ctx.Cookies(config.cookieName, INVALID_ACCESS) == INVALID_ACCESS {
-			//ctx.Redirect(config.LoginUrl)
+		if cookieTk == INVALID_ACCESS {
 			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorize Access"})
 			return fmt.Errorf("Unauthorized Access")
 		}
@@ -51,16 +54,10 @@ func AuthRequire(config Config) fiber.Handler {
 
 		defer store.Save()
 
-		storeISAT := store.Get("TrxIsat")
+		storedCookie := store.Get(STORED_COOKIE_NAME)
+		log.Printf("Cookie Stored: %s", storedCookie)
 		//Check if already logged In and Update view if it is required
-		if storeISAT != nil && storeISAT != "" {
-
-			if onUrl.TrxISAT == storeISAT {
-				log.Printf("IT's Loged IN properly onUrl.TrxISAT =%s and storeISAT= %s", onUrl.TrxISAT, storeISAT)
-			}
-
-			storeISAT := store.Get("TrxIsat").(string)
-			log.Printf("onUrl.TrxISAT =%s and storeISAT= %s", onUrl.TrxISAT, storeISAT)
+		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
 
 			log.Printf("session TrxIsat: %s", store.Get("TrxIsat"))
 			log.Printf("Already login")
@@ -90,16 +87,16 @@ func AuthRequire(config Config) fiber.Handler {
 		}
 		defer resp.Body.Close()
 
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+			log.Printf(" PANIC PREPARE TO REDIRECT resp.StatusCode %v", resp.StatusCode)
+			return ctx.Redirect(loginUrl)
+		}
+
 		//read session details data from identity
 		userSessionDetail := SessionDetails{}
 		err = json.NewDecoder(resp.Body).Decode(&userSessionDetail)
 		if err != nil {
 			log.Printf("Session Details resp error %v", err)
-			return ctx.Redirect(loginUrl)
-		}
-
-		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-			log.Printf(" PANIC PREPARE TO REDIRECT resp.StatusCode %v", resp.StatusCode)
 			return ctx.Redirect(loginUrl)
 		}
 
@@ -109,13 +106,12 @@ func AuthRequire(config Config) fiber.Handler {
 			store.Set("VIEW", onUrl.View)
 			store.Set("AppView", userSessionDetail.AppView)
 		}
-
+		store.Set(STORED_COOKIE_NAME, cookieTk)
 		store.Set("AccountId", userSessionDetail.AccountId)
 		store.Set("FirstName", userSessionDetail.FirstName)
 		store.Set("LastName", userSessionDetail.LastName)
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 
-		store.Set("TrxIsat", userSessionDetail.TrxIsat)
 		store.Set("UserId", userSessionDetail.UserId)
 
 		if err := ctx.Next(); err != nil {
