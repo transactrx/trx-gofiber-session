@@ -26,14 +26,14 @@ func AuthRequire(config Config) fiber.Handler {
 		const STORED_COOKIE_NAME = "COOKIE_TK"
 
 		cookieTk := ctx.Cookies(config.cookieName, INVALID_ACCESS)
-		log.Printf(" Cookie  Name: %s, Value: %v", config.cookieName, cookieTk)
-		//Check cookies - for authorize call's source
+		//Check cookie to authorize valid call's source
 		if cookieTk == INVALID_ACCESS {
-			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorize Access"})
+			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorized Access"})
 			return fmt.Errorf("Unauthorized Access")
 		}
 
 		store := config.Session.Get(ctx)
+		defer store.Save()
 
 		onUrl := IdentityObj{}
 
@@ -52,14 +52,11 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
-		defer store.Save()
-
-		storedCookie := store.Get(STORED_COOKIE_NAME)
-		log.Printf("Cookie Stored: %s", storedCookie)
 		//Check if already logged In and Update view if it is required
-		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
+		log.Printf("config.mandatoryAuth : %s", config.mandatoryAuth)
+		storedCookie := store.Get(STORED_COOKIE_NAME)
+		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk && (config.mandatoryAuth == nil || *config.mandatoryAuth != true) {
 
-			log.Printf("session TrxIsat: %s", store.Get("TrxIsat"))
 			log.Printf("Already login")
 			if len(onUrl.View) > 0 {
 				store.Set("VIEW", onUrl.View)
@@ -88,11 +85,11 @@ func AuthRequire(config Config) fiber.Handler {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-			log.Printf(" PANIC PREPARE TO REDIRECT resp.StatusCode %v", resp.StatusCode)
+			log.Printf("Identity Status Code %v", resp.StatusCode)
 			return ctx.Redirect(loginUrl)
 		}
 
-		//read session details data from identity
+		//Read session details data from identity resp
 		userSessionDetail := SessionDetails{}
 		err = json.NewDecoder(resp.Body).Decode(&userSessionDetail)
 		if err != nil {
@@ -111,7 +108,6 @@ func AuthRequire(config Config) fiber.Handler {
 		store.Set("FirstName", userSessionDetail.FirstName)
 		store.Set("LastName", userSessionDetail.LastName)
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
-
 		store.Set("UserId", userSessionDetail.UserId)
 
 		if err := ctx.Next(); err != nil {
