@@ -11,7 +11,7 @@ type Config struct {
 	CredentialUrl string
 	Session       *session.Session
 	cookieName    string
-	mandatoryAuth *bool
+	mandatoryAuth bool
 }
 
 type IdentityObj struct {
@@ -35,7 +35,7 @@ type SessionDetails struct {
 	TrxIsat        string `json:"trxIsat"`
 }
 
-func CreateConfig(loginUrl string, credentialUrl string, session *session.Session, cookieName string, mandatoryAuth *bool) (Config, error) {
+func CreateConfig(loginUrl string, credentialUrl string, session *session.Session, cookieName string, mandatoryAuth bool) (Config, error) {
 
 	if len(strings.TrimSpace(loginUrl)) == 0 {
 		return Config{}, fmt.Errorf("loginUrl is required")
