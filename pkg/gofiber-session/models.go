@@ -10,8 +10,8 @@ type Config struct {
 	LoginUrl      string
 	CredentialUrl string
 	Session       *session.Session
-	cookieName    string
-	mandatoryAuth bool
+	CookieName    string
+	MandatoryAuth bool
 }
 
 type IdentityObj struct {
