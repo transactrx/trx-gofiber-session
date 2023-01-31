@@ -12,7 +12,7 @@ func main() {
 
 	store := session.New(session.Config{Expiration: time.Minute * 1})
 
-	config, err := gofiber_session.CreateConfig("https://login.transactrx.com", "https://login.transactrx.com/credential", store, "validAuthCookieName")
+	config, err := gofiber_session.CreateConfig("https://login.transactrx.com", "https://login.transactrx.com/credential", store, "validAuthCookieName", false)
 	if err != nil {
 		log.Printf("Error creating config: %v", err)
 	}

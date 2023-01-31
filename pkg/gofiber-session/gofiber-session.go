@@ -53,9 +53,9 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
 		//Check if already logged In and Update view if it is required
-		log.Printf("config.mandatoryAuth : %v", *config.mandatoryAuth)
+		log.Printf("config.mandatoryAuth : %v", config.mandatoryAuth)
 		storedCookie := store.Get(STORED_COOKIE_NAME)
-		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk && (config.mandatoryAuth == nil || *config.mandatoryAuth != true) {
+		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk && config.mandatoryAuth != true {
 
 			log.Printf("Already login")
 			if len(onUrl.View) > 0 {
