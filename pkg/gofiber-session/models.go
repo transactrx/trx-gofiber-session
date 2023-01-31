@@ -10,8 +10,8 @@ type Config struct {
 	LoginUrl      string
 	CredentialUrl string
 	Session       *session.Session
-	cookieName    string
-	mandatoryAuth bool
+	CookieName    string
+	MandatoryAuth bool
 }
 
 type IdentityObj struct {
@@ -55,7 +55,7 @@ func CreateConfig(loginUrl string, credentialUrl string, session *session.Sessio
 		LoginUrl:      loginUrl,
 		CredentialUrl: credentialUrl,
 		Session:       session,
-		cookieName:    cookieName,
-		mandatoryAuth: mandatoryAuth,
+		CookieName:    cookieName,
+		MandatoryAuth: mandatoryAuth,
 	}, nil
 }
