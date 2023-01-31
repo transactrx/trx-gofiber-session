@@ -37,10 +37,6 @@ func AuthRequire(config Config) fiber.Handler {
 
 		onUrl := IdentityObj{}
 
-		log.Printf("URI STRING: %s", ctx.Request().URI().String())
-		log.Printf("QUERY STRING: %s", string(ctx.Request().URI().QueryString()))
-		log.Print(config)
-
 		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
 		if err != nil {
 			log.Printf(" ERROR parsing query: %v", err)
@@ -56,13 +52,9 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
-		log.Print("onUrl Read Querystring :")
-		log.Print(onUrl)
-
 		//Check if already logged In and Update view if it is required
-		log.Printf("config.mandatoryAuth : %v", config.MandatoryAuth)
 		storedCookie := store.Get(STORED_COOKIE_NAME)
-		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk && config.MandatoryAuth != true {
+		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
 
 			log.Printf("Already login")
 			if len(onUrl.View) > 0 {
@@ -77,11 +69,6 @@ func AuthRequire(config Config) fiber.Handler {
 		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s&PROFILENAME=%s&mode=%s", config.LoginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View, onUrl.ProfileName, onUrl.Mode)
 
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
-			if len(onUrl.AppId) == 0 || len(onUrl.SSCOMMON) == 0 {
-				log.Printf("Unauthorized Access.url: ")
-				ctx.Status(http.StatusUnauthorized)
-				return fmt.Errorf("Unauthorized Access")
-			}
 			log.Printf("Redirect loginUrl: %s", loginUrl)
 			return ctx.Redirect(loginUrl)
 		}
