@@ -77,6 +77,11 @@ func AuthRequire(config Config) fiber.Handler {
 		loginUrl := fmt.Sprintf("%s?appid=%s&SSCOMMON=%s&view=%s&PROFILENAME=%s&mode=%s", config.LoginUrl, onUrl.AppId, onUrl.SSCOMMON, onUrl.View, onUrl.ProfileName, onUrl.Mode)
 
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
+			if len(onUrl.AppId) == 0 || len(onUrl.SSCOMMON) == 0 {
+				log.Printf("Unauthorized Access.url: ")
+				ctx.Status(http.StatusUnauthorized)
+				return fmt.Errorf("Unauthorized Access")
+			}
 			log.Printf("Redirect loginUrl: %s", loginUrl)
 			return ctx.Redirect(loginUrl)
 		}
