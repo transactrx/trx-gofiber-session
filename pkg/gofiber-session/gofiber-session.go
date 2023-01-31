@@ -25,7 +25,7 @@ func AuthRequire(config Config) fiber.Handler {
 		const INVALID_ACCESS = "INVALID-ACCESS"
 		const STORED_COOKIE_NAME = "COOKIE_TK"
 
-		cookieTk := ctx.Cookies(config.cookieName, INVALID_ACCESS)
+		cookieTk := ctx.Cookies(config.CookieName, INVALID_ACCESS)
 		//Check cookie to authorize valid call's source
 		if cookieTk == INVALID_ACCESS {
 			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorized Access"})
@@ -53,9 +53,9 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
 		//Check if already logged In and Update view if it is required
-		log.Printf("config.mandatoryAuth : %v", config.mandatoryAuth)
+		log.Printf("config.mandatoryAuth : %v", config.MandatoryAuth)
 		storedCookie := store.Get(STORED_COOKIE_NAME)
-		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk && config.mandatoryAuth != true {
+		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk && config.MandatoryAuth != true {
 
 			log.Printf("Already login")
 			if len(onUrl.View) > 0 {
