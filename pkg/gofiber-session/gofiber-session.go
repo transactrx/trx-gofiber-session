@@ -55,6 +55,9 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
+		log.Print("onUrl Read Querystring :")
+		log.Print(onUrl)
+
 		//Check if already logged In and Update view if it is required
 		log.Printf("config.mandatoryAuth : %v", config.MandatoryAuth)
 		storedCookie := store.Get(STORED_COOKIE_NAME)
