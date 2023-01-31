@@ -55,7 +55,7 @@ func CreateConfig(loginUrl string, credentialUrl string, session *session.Sessio
 		LoginUrl:      loginUrl,
 		CredentialUrl: credentialUrl,
 		Session:       session,
-		cookieName:    cookieName,
-		mandatoryAuth: mandatoryAuth,
+		CookieName:    cookieName,
+		MandatoryAuth: mandatoryAuth,
 	}, nil
 }
