@@ -11,6 +11,7 @@ type Config struct {
 	CredentialUrl string
 	Session       *session.Session
 	cookieName    string
+	mandatoryAuth *bool
 }
 
 type IdentityObj struct {
