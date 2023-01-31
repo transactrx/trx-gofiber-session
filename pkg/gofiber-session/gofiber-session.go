@@ -37,6 +37,9 @@ func AuthRequire(config Config) fiber.Handler {
 
 		onUrl := IdentityObj{}
 
+		log.Printf("QUERY STRING: %s", string(ctx.Request().URI().QueryString()))
+		log.Print(config)
+
 		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
 		if err != nil {
 			log.Printf(" ERROR parsing query: %v", err)
