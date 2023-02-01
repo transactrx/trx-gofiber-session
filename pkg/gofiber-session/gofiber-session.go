@@ -15,15 +15,38 @@ type Session struct {
 	Test string
 }
 
+const INVALID_ACCESS = "INVALID-ACCESS"
+const STORED_COOKIE_NAME = "COOKIE_TK"
+
 func (s *Session) GetTest() string {
 	return s.Test
 }
 
-func AuthRequire(config Config) fiber.Handler {
+func SessionRequire(config Config) fiber.Handler {
+
 	return func(ctx *fiber.Ctx) error {
 
-		const INVALID_ACCESS = "INVALID-ACCESS"
-		const STORED_COOKIE_NAME = "COOKIE_TK"
+		store := config.Session.Get(ctx)
+
+		if store.Get(STORED_COOKIE_NAME) != nil {
+			log.Printf("Unable to find session ")
+			ctx.Status(http.StatusUnauthorized)
+			//SendStatus
+		} else {
+			log.Printf("Cookie %s has been found. So far so good", STORED_COOKIE_NAME)
+		}
+
+		if err := ctx.Next(); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+}
+
+func AuthRequire(config Config) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
 
 		cookieTk := ctx.Cookies(config.CookieName, INVALID_ACCESS)
 		//Check cookie to authorize valid call's source
