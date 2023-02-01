@@ -27,13 +27,13 @@ func SessionRequire(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		store := config.Session.Get(ctx)
-
-		if store.Get(STORED_COOKIE_NAME) != nil {
-			log.Printf("Unable to find session ")
-			ctx.Status(http.StatusUnauthorized)
+		cookie := store.Get(STORED_COOKIE_NAME)
+		if cookie == nil {
+			log.Printf("SessionRequire-Middleware. Unable to find session for Cookie: %s ", STORED_COOKIE_NAME)
+			ctx.SendStatus(http.StatusUnauthorized)
 			//SendStatus
 		} else {
-			log.Printf("Cookie %s has been found. So far so good", STORED_COOKIE_NAME)
+			log.Printf("SessionRequire-Middleware. Cookie: %s has been found. So far so good Cookie value:%s", STORED_COOKIE_NAME, cookie)
 		}
 
 		if err := ctx.Next(); err != nil {
