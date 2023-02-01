@@ -19,6 +19,7 @@ func main() {
 
 	app := fiber.New()
 	app.Use(gofiber_session.AuthRequire(config))
+	app.Use(gofiber_session.SessionRequire(config))
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")
