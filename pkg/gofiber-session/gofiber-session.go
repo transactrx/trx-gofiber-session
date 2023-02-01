@@ -16,7 +16,7 @@ type Session struct {
 }
 
 const INVALID_ACCESS = "INVALID-ACCESS"
-const STORED_COOKIE_NAME = "COOKIE_TK"
+const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
 
 func (s *Session) GetTest() string {
 	return s.Test
@@ -55,6 +55,8 @@ func AuthRequire(config Config) fiber.Handler {
 			return fmt.Errorf("Unauthorized Access")
 		}
 
+		log.Printf("****AuthRequire TRX_CUST_NUM: %s", cookieTk)
+
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
@@ -75,16 +77,17 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
-		////Check if already logged In and Update view if it is required
-		//storedCookie := store.Get(STORED_COOKIE_NAME)
-		//if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
-		//
-		//	log.Printf("Already login")
-		//	if len(onUrl.View) > 0 {
-		//		store.Set("VIEW", onUrl.View)
-		//	}
-		//	return ctx.Next()
-		//}
+		//Check if already logged In and Update view if it is required
+		storedCookie := store.Get(STORED_COOKIE_NAME)
+		log.Printf("***AuthRequire %s: %s", STORED_COOKIE_NAME, storedCookie)
+		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
+
+			log.Printf("Already login")
+			if len(onUrl.View) > 0 {
+				store.Set("VIEW", onUrl.View)
+			}
+			return ctx.Next()
+		}
 
 		log.Print("New Session, verify identity with IdentityService!")
 
