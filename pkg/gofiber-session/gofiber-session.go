@@ -31,6 +31,7 @@ func SessionRequire(config Config) fiber.Handler {
 		if cookie == nil {
 			log.Printf("SessionRequire-Middleware. Unable to find session for Cookie: %s ", STORED_COOKIE_NAME)
 			ctx.SendStatus(http.StatusUnauthorized)
+			return fmt.Errorf("Unauthorized SessionRequire access. KO")
 			//SendStatus
 		} else {
 			log.Printf("SessionRequire-Middleware. Cookie: %s has been found. So far so good Cookie value:%s", STORED_COOKIE_NAME, cookie)
