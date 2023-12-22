@@ -94,6 +94,8 @@ func AuthRequire(config Config) fiber.Handler {
 				store.Set("VIEW", onUrl.View)
 			}
 			return ctx.Next()
+		} else {
+			log.Printf("storedCookie: %v, cookieTk: %v, storedTrxISAT: %v, onUrl.TrxISAT: %v", storedCookie, cookieTk, storedTrxISAT, onUrl.TrxISAT)
 		}
 
 		log.Print("New Session, verify identity with IdentityService!")
