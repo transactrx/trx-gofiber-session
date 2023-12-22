@@ -87,7 +87,7 @@ func AuthRequire(config Config) fiber.Handler {
 			storedCookie != "" &&
 			storedCookie == cookieTk &&
 			storedTrxISAT != nil &&
-			storedTrxISAT == onUrl.TrxISAT {
+			storedTrxISAT.(string) == onUrl.TrxISAT {
 
 			log.Printf("Already login")
 			if len(onUrl.View) > 0 {
