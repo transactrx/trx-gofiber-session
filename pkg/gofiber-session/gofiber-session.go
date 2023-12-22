@@ -27,9 +27,8 @@ func SessionRequire(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		store := config.Session.Get(ctx)
-		storedTrxISAT := store.Get("TRX-ISAT")
 		cookie := store.Get(STORED_COOKIE_NAME)
-		if storedTrxISAT == nil || len(strings.TrimSpace(storedTrxISAT.(string))) <= 0 || cookie == nil {
+		if cookie == nil {
 			log.Printf("SessionRequire-Middleware. Unable to find session for Cookie: %s ", STORED_COOKIE_NAME)
 			ctx.SendStatus(http.StatusUnauthorized)
 			return fmt.Errorf("Unauthorized access.")
@@ -81,13 +80,8 @@ func AuthRequire(config Config) fiber.Handler {
 
 		//Check if already logged In and Update view if it is required
 		storedCookie := store.Get(STORED_COOKIE_NAME)
-		storedTrxISAT := store.Get("TRX-ISAT")
 		log.Printf("***AuthRequire %s: %s", STORED_COOKIE_NAME, storedCookie)
-		if storedCookie != nil &&
-			storedCookie != "" &&
-			storedCookie == cookieTk &&
-			storedTrxISAT != nil &&
-			storedTrxISAT == onUrl.TrxISAT {
+		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
 
 			log.Printf("Already login")
 			if len(onUrl.View) > 0 {
@@ -135,14 +129,12 @@ func AuthRequire(config Config) fiber.Handler {
 			store.Set("VIEW", onUrl.View)
 			store.Set("AppView", userSessionDetail.AppView)
 		}
-
 		store.Set(STORED_COOKIE_NAME, cookieTk)
 		store.Set("AccountId", userSessionDetail.AccountId)
 		store.Set("FirstName", userSessionDetail.FirstName)
 		store.Set("LastName", userSessionDetail.LastName)
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 		store.Set("UserId", userSessionDetail.UserId)
-		store.Set("TRX-ISAT", onUrl.TrxISAT) //Save TRX-ISAT for future use and detect if any change in url
 
 		if err := ctx.Next(); err != nil {
 			return err
