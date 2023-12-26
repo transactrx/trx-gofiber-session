@@ -78,17 +78,17 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
 
-		//Check if already logged In and Update view if it is required
-		storedCookie := store.Get(STORED_COOKIE_NAME)
-		log.Printf("***AuthRequire %s: %s", STORED_COOKIE_NAME, storedCookie)
-		if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
-
-			log.Printf("Already login")
-			if len(onUrl.View) > 0 {
-				store.Set("VIEW", onUrl.View)
-			}
-			return ctx.Next()
-		}
+		////Check if already logged In and Update view if it is required
+		//storedCookie := store.Get(STORED_COOKIE_NAME)
+		//log.Printf("***AuthRequire %s: %s", STORED_COOKIE_NAME, storedCookie)
+		//if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
+		//
+		//	log.Printf("Already login")
+		//	if len(onUrl.View) > 0 {
+		//		store.Set("VIEW", onUrl.View)
+		//	}
+		//	return ctx.Next()
+		//}
 
 		log.Print("New Session, verify identity with IdentityService!")
 
