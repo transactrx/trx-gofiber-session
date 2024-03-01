@@ -11,6 +11,7 @@ type Config struct {
 	CredentialUrl string
 	Session       *session.Session
 	CookieName    string
+	ApplicationID string
 }
 
 type IdentityObj struct {
