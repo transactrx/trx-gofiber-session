@@ -46,8 +46,19 @@ func SessionRequire(config Config) fiber.Handler {
 
 }
 
-func ProxyAuthRequire(config Config) fiber.Handler {
+func ProxyAuthRequire(config Config, whiteRouteList []strings) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+
+		if whiteRouteList != nil && len(whiteRouteList) > 0 {
+			for _, route := range whiteRouteList {
+				log.Printf("Open Route: %s, - ctx.Path(): %s", route, ctx.Path())
+				if route == ctx.Path() {
+					return ctx.Next()
+					break
+				}
+			}
+		}
+
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
