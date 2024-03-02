@@ -63,12 +63,12 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 
 		//Read URL Querystring
 		onUrl.AppId = q.Get("appid")
- 
-		if len(strings.TrimSpace(onUrl.AppId)) == 0 {
-			log.Printf(" ERROR Unable to find appid inside URL Query")
-			ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
-			return fmt.Errorf("unauthorized Access")
-		}
+
+		//if len(strings.TrimSpace(onUrl.AppId)) == 0 {
+		//	log.Printf(" ERROR Unable to find appid inside URL Query")
+		//	ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
+		//	return fmt.Errorf("unauthorized Access")
+		//}
 
 		log.Print("New Session, verify identity with IdentityService!")
 
