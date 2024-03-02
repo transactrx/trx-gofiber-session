@@ -54,7 +54,6 @@ func ProxyAuthRequire(config Config, whiteRouteList []string) fiber.Handler {
 				log.Printf("Open Route: %s, - ctx.Path(): %s", route, ctx.Path())
 				if route == ctx.Path() {
 					return ctx.Next()
-					break
 				}
 			}
 		}
