@@ -59,18 +59,19 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 			return fmt.Errorf("unauthorized Access")
 		}
 
-		//// Print all parameters before extracting 'appid'
-		//log.Printf("Printing all URL query parameters:")
-		//for key, values := range q {
-		//	for _, value := range values {
-		//		log.Printf("Parameter '%s' has value '%s'", key, value)
-		//	}
-		//}
-
 		//Read URL Querystring
 		onUrl := IdentityObj{}
 		onUrl.AppId = q.Get("appid")
 		onUrl.TrxISAT = q.Get("TRX-ISAT")
+
+		//// Print all parameters before extracting 'appid'
+		//log.Printf("Printing all URL query parameters:")
+		for key, values := range q {
+			for _, value := range values {
+				log.Printf("Parameter '%s' has value '%s'", key, value)
+			}
+		}
+
 		loginUrl := ""
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
 
