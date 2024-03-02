@@ -121,16 +121,16 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 			store.Set("AppView", userSessionDetail.AppView)
 		}
 
-		cookieTk := ctx.Cookies(config.CookieName, INVALID_ACCESS)
-		//Check cookie to authorize valid call's source
-		if cookieTk == INVALID_ACCESS {
-			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorized Access"})
-			return fmt.Errorf("unauthorized Access")
-		}
+		//cookieTk := ctx.Cookies(config.CookieName, INVALID_ACCESS)
+		////Check cookie to authorize valid call's source
+		//if cookieTk == INVALID_ACCESS {
+		//	ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorized Access"})
+		//	return fmt.Errorf("unauthorized Access. ")
+		//}
 
-		log.Printf("****AuthRequire TRX_CUST_NUM: %s", cookieTk)
+		//log.Printf("****AuthRequire TRX_CUST_NUM: %s", cookieTk)
 
-		store.Set(STORED_COOKIE_NAME, cookieTk)
+		store.Set(STORED_COOKIE_NAME, "fake-cookie-value")
 		store.Set("AccountId", userSessionDetail.AccountId)
 		store.Set("FirstName", userSessionDetail.FirstName)
 		store.Set("LastName", userSessionDetail.LastName)
