@@ -51,91 +51,91 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
-		//hack to skip middleware
-		accountId, ok := store.Get("AccountId").(string)
-		if !ok || len(accountId) == 0 {
-			log.Printf("*** ProxyAuthRequire-Middleware")
+		////hack to skip middleware
+		//accountId, ok := store.Get("AccountId").(string)
+		//if !ok || len(accountId) == 0 {
+		log.Printf("*** ProxyAuthRequire-Middleware")
 
-			q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
-			if err != nil {
-				log.Printf(" ERROR parsing query: %v", err)
+		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
+		if err != nil {
+			log.Printf(" ERROR parsing query: %v", err)
+			ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
+			return fmt.Errorf("unauthorized Access")
+		}
+
+		//Read URL Querystring
+		onUrl := IdentityObj{}
+		onUrl.AppId = q.Get("appid")
+		onUrl.TrxISAT = q.Get("TRX-ISAT")
+
+		//// Print all parameters before extracting 'appid'
+		//log.Printf("Printing all URL query parameters:")
+		for key, values := range q {
+			for _, value := range values {
+				log.Printf("Parameter '%s' has value '%s'", key, value)
+			}
+		}
+
+		loginUrl := ""
+		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
+
+			log.Printf("Unable to find TRX-ISAT inside URL Query")
+			if len(strings.TrimSpace(onUrl.AppId)) == 0 {
+				log.Printf(" ERROR Unable to find appid inside URL Query")
 				ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
 				return fmt.Errorf("unauthorized Access")
 			}
 
-			//Read URL Querystring
-			onUrl := IdentityObj{}
-			onUrl.AppId = q.Get("appid")
-			onUrl.TrxISAT = q.Get("TRX-ISAT")
+			//Verify identity
+			loginUrl = fmt.Sprintf("%s?appid=%s", config.LoginUrl, onUrl.AppId)
 
-			//// Print all parameters before extracting 'appid'
-			//log.Printf("Printing all URL query parameters:")
-			for key, values := range q {
-				for _, value := range values {
-					log.Printf("Parameter '%s' has value '%s'", key, value)
-				}
-			}
-
-			loginUrl := ""
-			if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
-
-				log.Printf("Unable to find TRX-ISAT inside URL Query")
-				if len(strings.TrimSpace(onUrl.AppId)) == 0 {
-					log.Printf(" ERROR Unable to find appid inside URL Query")
-					ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
-					return fmt.Errorf("unauthorized Access")
-				}
-
-				//Verify identity
-				loginUrl = fmt.Sprintf("%s?appid=%s", config.LoginUrl, onUrl.AppId)
-
-				log.Printf("Redirect to identity service: %s", loginUrl)
-				return ctx.Redirect(loginUrl)
-			}
-
-			//since we have trxISAT, we can verify the user
-			log.Print("New Session, verify identity with IdentityService!")
-			req, _ := http.NewRequest(http.MethodPost, config.CredentialUrl, bytes.NewBuffer([]byte(onUrl.TrxISAT)))
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Printf("Error user authentication: %v", err)
-				return ctx.Redirect(loginUrl)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-				log.Printf("Identity Status Code %v", resp.StatusCode)
-				return ctx.Redirect(loginUrl)
-			}
-
-			//Read session details data from identity resp
-			userSessionDetail := SessionDetails{}
-			err = json.NewDecoder(resp.Body).Decode(&userSessionDetail)
-			if err != nil {
-				log.Printf("Session Details resp error %v", err)
-				return ctx.Redirect(loginUrl)
-			}
-
-			//cookieTk := ctx.Cookies(config.CookieName, INVALID_ACCESS)
-			////Check cookie to authorize valid call's source
-			//if cookieTk == INVALID_ACCESS {
-			//	ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorized Access"})
-			//	return fmt.Errorf("unauthorized Access. ")
-			//}
-
-			//log.Printf("****AuthRequire TRX_CUST_NUM: %s", cookieTk)
-
-			store.Set(STORED_COOKIE_NAME, "fake-cookie-value")
-			store.Set("AccountId", userSessionDetail.AccountId)
-			store.Set("FirstName", userSessionDetail.FirstName)
-			store.Set("LastName", userSessionDetail.LastName)
-			store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
-			store.Set("UserId", userSessionDetail.UserId)
-		} else {
-			log.Printf("*** we don't need  ProxyAuthRequire-Middleware. AccountId: %s", accountId)
+			log.Printf("Redirect to identity service: %s", loginUrl)
+			return ctx.Redirect(loginUrl)
 		}
+
+		//since we have trxISAT, we can verify the user
+		log.Print("New Session, verify identity with IdentityService!")
+		req, _ := http.NewRequest(http.MethodPost, config.CredentialUrl, bytes.NewBuffer([]byte(onUrl.TrxISAT)))
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("Error user authentication: %v", err)
+			return ctx.Redirect(loginUrl)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+			log.Printf("Identity Status Code %v", resp.StatusCode)
+			return ctx.Redirect(loginUrl)
+		}
+
+		//Read session details data from identity resp
+		userSessionDetail := SessionDetails{}
+		err = json.NewDecoder(resp.Body).Decode(&userSessionDetail)
+		if err != nil {
+			log.Printf("Session Details resp error %v", err)
+			return ctx.Redirect(loginUrl)
+		}
+
+		//cookieTk := ctx.Cookies(config.CookieName, INVALID_ACCESS)
+		////Check cookie to authorize valid call's source
+		//if cookieTk == INVALID_ACCESS {
+		//	ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorized Access"})
+		//	return fmt.Errorf("unauthorized Access. ")
+		//}
+
+		//log.Printf("****AuthRequire TRX_CUST_NUM: %s", cookieTk)
+
+		store.Set(STORED_COOKIE_NAME, "fake-cookie-value")
+		store.Set("AccountId", userSessionDetail.AccountId)
+		store.Set("FirstName", userSessionDetail.FirstName)
+		store.Set("LastName", userSessionDetail.LastName)
+		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
+		store.Set("UserId", userSessionDetail.UserId)
+		//} else {
+		//	log.Printf("*** we don't need  ProxyAuthRequire-Middleware. AccountId: %s", accountId)
+		//}
 
 		if err := ctx.Next(); err != nil {
 			return err
