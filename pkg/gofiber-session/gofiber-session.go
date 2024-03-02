@@ -46,7 +46,7 @@ func SessionRequire(config Config) fiber.Handler {
 
 }
 
-func ProxyAuthRequire(config Config, whiteRouteList []strings) fiber.Handler {
+func ProxyAuthRequire(config Config, whiteRouteList []string) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		if whiteRouteList != nil && len(whiteRouteList) > 0 {
