@@ -52,8 +52,6 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
-		onUrl := IdentityObj{}
-
 		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
 		if err != nil {
 			log.Printf(" ERROR parsing query: %v", err)
@@ -61,7 +59,16 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 			return fmt.Errorf("unauthorized Access")
 		}
 
+		// Print all parameters before extracting 'appid'
+		log.Printf("Printing all URL query parameters:")
+		for key, values := range q {
+			for _, value := range values {
+				log.Printf("Parameter '%s' has value '%s'", key, value)
+			}
+		}
+		
 		//Read URL Querystring
+		onUrl := IdentityObj{}
 		onUrl.AppId = q.Get("appid")
 		loginUrl := ""
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
