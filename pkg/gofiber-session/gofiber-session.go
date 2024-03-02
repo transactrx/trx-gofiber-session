@@ -51,9 +51,6 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
-		////hack to skip middleware
-		//accountId, ok := store.Get("AccountId").(string)
-		//if !ok || len(accountId) == 0 {
 		log.Printf("*** ProxyAuthRequire-Middleware")
 
 		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
@@ -119,7 +116,7 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 		}
 
 		//cookieTk := ctx.Cookies(config.CookieName, INVALID_ACCESS)
-		////Check cookie to authorize valid call's source
+		//todo -> Check cookie to authorize valid call's source
 		//if cookieTk == INVALID_ACCESS {
 		//	ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": http.StatusUnauthorized, "message": "Unauthorized Access"})
 		//	return fmt.Errorf("unauthorized Access. ")
@@ -133,9 +130,6 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 		store.Set("LastName", userSessionDetail.LastName)
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 		store.Set("UserId", userSessionDetail.UserId)
-		//} else {
-		//	log.Printf("*** we don't need  ProxyAuthRequire-Middleware. AccountId: %s", accountId)
-		//}
 
 		if err := ctx.Next(); err != nil {
 			return err
