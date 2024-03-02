@@ -130,7 +130,7 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 		store.Set("LastName", userSessionDetail.LastName)
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 		store.Set("UserId", userSessionDetail.UserId)
-
+		store.Set("AppId", onUrl.AppId)
 		if err := ctx.Next(); err != nil {
 			return err
 		}
