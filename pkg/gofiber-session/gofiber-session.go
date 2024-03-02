@@ -48,7 +48,7 @@ func SessionRequire(config Config) fiber.Handler {
 
 func ProxyAuthRequire(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-
+		log.Printf("*** ProxyAuthRequire-Middleware")
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
@@ -63,23 +63,25 @@ func ProxyAuthRequire(config Config) fiber.Handler {
 
 		//Read URL Querystring
 		onUrl.AppId = q.Get("appid")
-
-		//if len(strings.TrimSpace(onUrl.AppId)) == 0 {
-		//	log.Printf(" ERROR Unable to find appid inside URL Query")
-		//	ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
-		//	return fmt.Errorf("unauthorized Access")
-		//}
-
-		log.Print("New Session, verify identity with IdentityService!")
-
-		//Verify identity
-		loginUrl := fmt.Sprintf("%s?appid=%s", config.LoginUrl, onUrl.AppId)
-
+		loginUrl := ""
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
-			log.Printf("Redirect loginUrl: %s", loginUrl)
+
+			log.Printf("Unable to find TRX-ISAT inside URL Query")
+			if len(strings.TrimSpace(onUrl.AppId)) == 0 {
+				log.Printf(" ERROR Unable to find appid inside URL Query")
+				ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
+				return fmt.Errorf("unauthorized Access")
+			}
+
+			//Verify identity
+			loginUrl = fmt.Sprintf("%s?appid=%s", config.LoginUrl, onUrl.AppId)
+
+			log.Printf("Redirect to identity service: %s", loginUrl)
 			return ctx.Redirect(loginUrl)
 		}
 
+		//since we have trxISAT, we can verify the user
+		log.Print("New Session, verify identity with IdentityService!")
 		req, _ := http.NewRequest(http.MethodPost, config.CredentialUrl, bytes.NewBuffer([]byte(onUrl.TrxISAT)))
 
 		client := &http.Client{}
