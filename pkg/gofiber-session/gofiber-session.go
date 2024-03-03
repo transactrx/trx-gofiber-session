@@ -53,8 +53,8 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 
 		if whiteListPrefixes != nil && len(whiteListPrefixes) > 0 {
 			for _, route := range whiteListPrefixes {
-				log.Printf("Open Route: %s, - ctx.Path(): %s", route, ctx.Path())
 				if strings.HasPrefix(ctx.Path(), route) {
+					log.Printf("Open Route: %s, - ctx.Path(): %s", route, ctx.Path())
 					return ctx.Next()
 				}
 			}
@@ -63,12 +63,18 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
+		log.Printf("Session %s", store.ID())
+
 		dateAdded := store.Get(SESSION_DATE_ADDED)
+		if dateAdded == nil || len(strings.TrimSpace(dateAdded.(string))) == 0 {
+			log.Printf("Session is not active, redirecting to login: dateAdded is nil or empty")
+		}
 		if dateAdded != nil && isSessionActive(dateAdded.(string)) {
+			log.Printf("Session is active, continue to next middleware for ctx.Path(): %s %s", ctx.Path(), dateAdded.(string))
 			return ctx.Next()
 		}
 
-		log.Printf("*** ProxyAuthRequire-Middleware")
+		log.Printf("*** ProxyAuthRequire-Middleware. Unable to find active session for ctx.Path(): %s", ctx.Path())
 
 		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
 		if err != nil {
