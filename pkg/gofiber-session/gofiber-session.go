@@ -63,6 +63,8 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
+		log.Printf("Session %v", store.ID())
+
 		dateAdded := store.Get(SESSION_DATE_ADDED)
 		if dateAdded == nil || len(strings.TrimSpace(dateAdded.(string))) == 0 {
 			log.Printf("Session is not active, redirecting to login: dateAdded is nil or empty")
