@@ -65,7 +65,7 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 
 		dateAdded := store.Get(SESSION_DATE_ADDED)
 		if dateAdded != nil && isSessionActive(dateAdded.(string)) {
-			ctx.Next()
+			return ctx.Next()
 		}
 
 		log.Printf("*** ProxyAuthRequire-Middleware")
