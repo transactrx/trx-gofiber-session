@@ -63,7 +63,7 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
-		log.Printf("Session %v", store.ID())
+		log.Printf("Session %s", store.ID())
 
 		dateAdded := store.Get(SESSION_DATE_ADDED)
 		if dateAdded == nil || len(strings.TrimSpace(dateAdded.(string))) == 0 {
