@@ -65,14 +65,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
-		if store != nil {
-			log.Printf("STORED_COOKIE_NAME: %v, SESSION_DATE_ADDED: %v, APPID: %v", store.Get(STORED_COOKIE_NAME), store.Get(SESSION_DATE_ADDED), store.Get(APPID))
-			if storeArr, err := json.Marshal(*store); err == nil {
-				log.Printf("Session %s", string(storeArr))
-			}
-		} else {
-			log.Printf("Session is nil")
-		}
+		log.Printf("STORED_COOKIE_NAME: %v, SESSION_DATE_ADDED: %v, APPID: %v", store.Get(STORED_COOKIE_NAME), store.Get(SESSION_DATE_ADDED), store.Get(APPID))
 
 		if config.InvalidateSessionPath != nil && len(*config.InvalidateSessionPath) > 0 && strings.HasPrefix(ctx.Path(), *config.InvalidateSessionPath) {
 			log.Printf("->InvalidateSessionPath: %s, - ctx.Path(): %s", *config.InvalidateSessionPath, ctx.Path())
@@ -93,11 +86,11 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
 			return fmt.Errorf("unauthorized Access")
 		}
-		if ctx != nil && ctx.Request() != nil && ctx.Request().URI() != nil && len(ctx.Request().URI().QueryString()) > 0 {
-			log.Printf("Full Querystring before parse: %s", string(ctx.Request().URI().QueryString()))
-		} else {
-			log.Printf("Full Querystring before parse is empty")
-		}
+		//if ctx != nil && ctx.Request() != nil && ctx.Request().URI() != nil && len(ctx.Request().URI().QueryString()) > 0 {
+		//	log.Printf("Full Querystring before parse: %s", string(ctx.Request().URI().QueryString()))
+		//} else {
+		//	log.Printf("Full Querystring before parse is empty")
+		//}
 		//for key, values := range q {
 		//	for _, value := range values {
 		//		log.Printf("Parameter '%s' has value '%s'", key, value)
@@ -167,28 +160,13 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 		store.Set("UserId", userSessionDetail.UserId)
 		store.Set(APPID, onUrl.AppId)
-		if storeArr, err := json.Marshal(store); err == nil {
-			log.Printf("Session to save 0 %s", string(storeArr))
-		} else {
-			log.Printf("Error while marshalling store 0: %v", err)
-		}
 		if store.Get(APPID) != nil {
 			log.Printf("APPID before to save: %s", store.Get(APPID).(string))
 		} else {
 			log.Printf("APPID before to save is empty")
 		}
 		store.Set("UserFunctions", userFunctionsStr)
-		if storeArr, err := json.Marshal(store); err == nil {
-			log.Printf("Session to save 1 %s", string(storeArr))
-		} else {
-			log.Printf("Error while marshalling store 1: %v", err)
-		}
 		setSessionTime(store)
-		if storeArr, err := json.Marshal(store); err == nil {
-			log.Printf("Session to save 2 %s", string(storeArr))
-		} else {
-			log.Printf("Error while marshalling store 2: %v", err)
-		}
 		log.Printf("Session is active, continue to next middleware")
 
 		return ctx.Next()
