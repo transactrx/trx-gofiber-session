@@ -172,10 +172,15 @@ func fetchUserFunctionsByToken(config Config, token string) ([]UserFunctionItem,
 		return nil, fmt.Errorf("FetchUserFunctionsUrl is required")
 	}
 
-	req, _ := http.NewRequest(http.MethodPost, *config.FetchUserFunctionsUrl, bytes.NewBuffer(userFunctionBodyJson))
+	req, err := http.NewRequest(http.MethodPost, *config.FetchUserFunctionsUrl, bytes.NewBuffer(userFunctionBodyJson))
+	if err != nil {
+		log.Printf("Error while creating request for fetchUserFunctionsByToken, Error: %s", err)
+		return nil, err
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("Error while fetching user functions: Error: %s", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
