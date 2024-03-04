@@ -65,11 +65,17 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
-		log.Printf("Session %s", store.ID())
+		if storeArr, err := json.Marshal(store); err != nil {
+			log.Printf("Session %s", string(storeArr))
+		}
+
+		if config.InvalidateSessionPath != nil && len(*config.InvalidateSessionPath) > 0 && strings.HasPrefix(ctx.Path(), *config.InvalidateSessionPath) {
+			log.Printf("InvalidateSessionPath: %s, - ctx.Path(): %s", *config.InvalidateSessionPath, ctx.Path())
+			store.Set(SESSION_DATE_ADDED, "")
+		}
 
 		dateAdded := store.Get(SESSION_DATE_ADDED)
 		if dateAdded != nil && isSessionActive(dateAdded.(string)) {
-			//Update session time
 			setSessionTime(store)
 			return ctx.Next()
 		}
@@ -82,8 +88,11 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{"status": http.StatusBadRequest, "code": "Invalid-Query-String", "message": "Invalid Access"})
 			return fmt.Errorf("unauthorized Access")
 		}
-
-		log.Printf("Full Querystring before parse: %s", string(ctx.Request().URI().QueryString()))
+		if ctx != nil && ctx.Request() != nil && ctx.Request().URI() != nil && len(ctx.Request().URI().QueryString()) > 0 {
+			log.Printf("Full Querystring before parse: %s", string(ctx.Request().URI().QueryString()))
+		} else {
+			log.Printf("Full Querystring before parse is empty")
+		}
 		//for key, values := range q {
 		//	for _, value := range values {
 		//		log.Printf("Parameter '%s' has value '%s'", key, value)
