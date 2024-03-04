@@ -65,8 +65,12 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
-		if storeArr, err := json.Marshal(store); err != nil {
-			log.Printf("Session %s", string(storeArr))
+		if store != nil {
+			if storeArr, err := json.Marshal(store); err == nil {
+				log.Printf("Session %s", string(storeArr))
+			}
+		} else {
+			log.Printf("Session is nil")
 		}
 
 		if config.InvalidateSessionPath != nil && len(*config.InvalidateSessionPath) > 0 && strings.HasPrefix(ctx.Path(), *config.InvalidateSessionPath) {
@@ -80,7 +84,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			return ctx.Next()
 		}
 
-		log.Printf("*** ProxyAuthRequire-Middleware. Unable to find active session for ctx.Path(): %s", ctx.Path())
+		log.Printf("*** ProxyAuthRequire-Middleware. ctx.Path(): %s", ctx.Path())
 
 		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
 		if err != nil {
@@ -102,7 +106,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		//Read URL Querystring
 		onUrl := IdentityObj{}
 		onUrl.AppId = q.Get(APPID)
-		if len(strings.TrimSpace(onUrl.AppId)) == 0 {
+		if len(strings.TrimSpace(onUrl.AppId)) == 0 && store != nil && store.Get(APPID) != nil {
 			onUrl.AppId = store.Get(APPID).(string)
 		}
 
