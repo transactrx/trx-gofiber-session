@@ -74,7 +74,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		}
 
 		if config.InvalidateSessionPath != nil && len(*config.InvalidateSessionPath) > 0 && strings.HasPrefix(ctx.Path(), *config.InvalidateSessionPath) {
-			log.Printf("InvalidateSessionPath: %s, - ctx.Path(): %s", *config.InvalidateSessionPath, ctx.Path())
+			log.Printf("->InvalidateSessionPath: %s, - ctx.Path(): %s", *config.InvalidateSessionPath, ctx.Path())
 			store.Set(SESSION_DATE_ADDED, "")
 		}
 
@@ -137,11 +137,17 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 
 		userFunctions, err := fetchUserFunctionsByToken(config, onUrl.TrxISAT)
 		if err != nil {
+			log.Printf("Error while verifying user access.")
 			ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{"status": http.StatusInternalServerError, "code": "Error-while-verifying-user-access", "message": "Error while verifying user access."})
 			return fmt.Errorf("Error while verifying user access.")
 		}
 
+		if functionResponseArr, err := json.Marshal(userFunctions); err == nil {
+			log.Printf("-> User Functions: %s", string(functionResponseArr))
+		}
+
 		if len(userFunctions) == 0 {
+			log.Printf("Unauthorized Access. User does not have any functions")
 			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
 			return fmt.Errorf("Unauthorized Access")
 		}
@@ -155,6 +161,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store.Set(APPID, onUrl.AppId)
 		store.Set("UserFunctions", userFunctions)
 		setSessionTime(store)
+		log.Printf("Session is active, continue to next middleware")
 		if err := ctx.Next(); err != nil {
 			return err
 		}
@@ -199,10 +206,6 @@ func fetchUserFunctionsByToken(config Config, token string) ([]UserFunctionItem,
 	if err != nil {
 		log.Printf("Session Details resp error %v", err)
 		return nil, err
-	}
-
-	if functionResponseArr, err := json.Marshal(functionResponse); err == nil {
-		log.Printf("User Functions: %s", string(functionResponseArr))
 	}
 
 	return functionResponse, nil
@@ -257,6 +260,7 @@ func isSessionActive(dateAddedStr string) bool {
 	log.Printf("Checking if session is active %s", dateAddedStr)
 	dateAddedTime, err := time.Parse(time.RFC3339, dateAddedStr)
 	if err != nil {
+		log.Printf("Error parsing dateAddedStr: %s", dateAddedStr)
 		return false
 	}
 
