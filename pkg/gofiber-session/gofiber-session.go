@@ -172,10 +172,9 @@ func fetchUserFunctionsByToken(config Config, token string) ([]UserFunctionItem,
 		return nil, fmt.Errorf("FetchUserFunctionsUrl is required")
 	}
 
-	fetchUserFunctionUrl := config.CredentialUrl + *config.FetchUserFunctionsUrl
-	log.Printf("Fetch user functions URL: %s", fetchUserFunctionUrl)
+	log.Printf("Fetch user functions URL: %s", *config.FetchUserFunctionsUrl)
 
-	req, err := http.NewRequest(http.MethodPost, fetchUserFunctionUrl, bytes.NewBuffer(userFunctionBodyJson))
+	req, err := http.NewRequest(http.MethodPost, *config.FetchUserFunctionsUrl, bytes.NewBuffer(userFunctionBodyJson))
 	if err != nil {
 		log.Printf("Error while creating request for fetchUserFunctionsByToken, Error: %s", err)
 		return nil, err
