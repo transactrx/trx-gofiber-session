@@ -157,7 +157,8 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			log.Printf("Error while marshalling userFunctions: %v", err)
 			return err
 		}
-		log.Printf("Session to save %s", string(userFunctionsArr))
+		userFunctionsStr := string(userFunctionsArr)
+		log.Printf("UserFunctions to save %s", userFunctionsStr)
 
 		store.Set(STORED_COOKIE_NAME, "fake-cookie-value")
 		store.Set("AccountId", userSessionDetail.AccountId)
@@ -166,19 +167,30 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 		store.Set("UserId", userSessionDetail.UserId)
 		store.Set(APPID, onUrl.AppId)
+		if storeArr, err := json.Marshal(store); err == nil {
+			log.Printf("Session to save 0 %s", string(storeArr))
+		} else {
+			log.Printf("Error while marshalling store 0: %v", err)
+		}
 		if store.Get(APPID) != nil {
 			log.Printf("APPID before to save: %s", store.Get(APPID).(string))
+		} else {
+			log.Printf("APPID before to save is empty")
 		}
-		store.Set("UserFunctions", string(userFunctionsArr))
+		store.Set("UserFunctions", userFunctionsStr)
+		if storeArr, err := json.Marshal(store); err == nil {
+			log.Printf("Session to save 1 %s", string(storeArr))
+		} else {
+			log.Printf("Error while marshalling store 1: %v", err)
+		}
 		setSessionTime(store)
 		if storeArr, err := json.Marshal(store); err == nil {
-			log.Printf("Session to save %s", string(storeArr))
+			log.Printf("Session to save 2 %s", string(storeArr))
+		} else {
+			log.Printf("Error while marshalling store 2: %v", err)
 		}
 		log.Printf("Session is active, continue to next middleware")
-		err = store.Save()
-		if err != nil {
-			log.Printf("Error while saving session: %v", err)
-		}
+
 		return ctx.Next()
 	}
 }
