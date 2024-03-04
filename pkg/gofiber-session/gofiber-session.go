@@ -133,7 +133,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		userSessionDetail, err := getUserDetails(config, onUrl.TrxISAT)
 		if err != nil {
 			log.Printf("Error user authentication: %v", err)
-			ctx.Redirect(loginUrl)
+			return ctx.Redirect(loginUrl)
 		}
 
 		userFunctions, err := fetchUserFunctionsByToken(config, onUrl.TrxISAT)
