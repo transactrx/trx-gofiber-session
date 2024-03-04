@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	LoginUrl      string
-	CredentialUrl string
-	Session       *session.Session
-	CookieName    string
-	ApplicationID string
+	LoginUrl              string
+	CredentialUrl         string
+	Session               *session.Session
+	CookieName            string
+	ApplicationID         string
+	FetchUserFunctionsUrl *string
 }
 
 type IdentityObj struct {
