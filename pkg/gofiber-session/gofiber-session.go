@@ -202,7 +202,7 @@ func fetchUserFunctionsByToken(config Config, token string) ([]UserFunctionItem,
 	}
 
 	if functionResponseArr, err := json.Marshal(functionResponse); err == nil {
-		log.Printf("Reponse: %s", string(functionResponseArr))
+		log.Printf("User Functions: %s", string(functionResponseArr))
 	}
 
 	return functionResponse, nil
