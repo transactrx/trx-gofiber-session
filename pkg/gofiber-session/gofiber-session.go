@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/session/v2"
 	"log"
 	"net/http"
 	"net/url"
@@ -19,6 +20,7 @@ type Session struct {
 const INVALID_ACCESS = "INVALID-ACCESS"
 const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
 const SESSION_DATE_ADDED = "SESSION_DATE_ADDED"
+const APPID = "appid"
 
 func (s *Session) GetTest() string {
 	return s.Test
@@ -66,11 +68,9 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 		log.Printf("Session %s", store.ID())
 
 		dateAdded := store.Get(SESSION_DATE_ADDED)
-		if dateAdded == nil || len(strings.TrimSpace(dateAdded.(string))) == 0 {
-			log.Printf("Session is not active, redirecting to login: dateAdded is nil or empty")
-		}
 		if dateAdded != nil && isSessionActive(dateAdded.(string)) {
-			log.Printf("Session is active, continue to next middleware for ctx.Path(): %s %s", ctx.Path(), dateAdded.(string))
+			//Update session time
+			setSessionTime(store)
 			return ctx.Next()
 		}
 
@@ -84,15 +84,19 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 		}
 
 		log.Printf("Full Querystring before parse: %s", string(ctx.Request().URI().QueryString()))
-		for key, values := range q {
-			for _, value := range values {
-				log.Printf("Parameter '%s' has value '%s'", key, value)
-			}
-		}
+		//for key, values := range q {
+		//	for _, value := range values {
+		//		log.Printf("Parameter '%s' has value '%s'", key, value)
+		//	}
+		//}
 
 		//Read URL Querystring
 		onUrl := IdentityObj{}
-		onUrl.AppId = q.Get("appid")
+		onUrl.AppId = q.Get(APPID)
+		if len(strings.TrimSpace(onUrl.AppId)) == 0 {
+			onUrl.AppId = store.Get(APPID).(string)
+		}
+
 		onUrl.TrxISAT = q.Get("TRX-ISAT")
 
 		loginUrl := ""
@@ -143,16 +147,20 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 		store.Set("LastName", userSessionDetail.LastName)
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 		store.Set("UserId", userSessionDetail.UserId)
-		store.Set("AppId", onUrl.AppId)
-		currentTime := time.Now().Format(time.RFC3339)
-		log.Printf("Saving Current Time for active session: %s", currentTime)
-		store.Set(SESSION_DATE_ADDED, currentTime)
+		store.Set(APPID, onUrl.AppId)
+		setSessionTime(store)
 		if err := ctx.Next(); err != nil {
 			return err
 		}
 
 		return nil
 	}
+}
+
+func setSessionTime(store *session.Store) {
+	currentTime := time.Now().Format(time.RFC3339)
+	log.Printf("Saving Current Time for active session: %s", currentTime)
+	store.Set(SESSION_DATE_ADDED, currentTime)
 }
 
 func isSessionActive(dateAddedStr string) bool {
