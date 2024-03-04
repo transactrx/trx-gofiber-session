@@ -152,6 +152,12 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
 			return fmt.Errorf("Unauthorized Access")
 		}
+		userFunctionsArr, err := json.Marshal(userFunctions)
+		if err != nil {
+			log.Printf("Error while marshalling userFunctions: %v", err)
+			return err
+		}
+		log.Printf("Session to save %s", string(userFunctionsArr))
 
 		store.Set(STORED_COOKIE_NAME, "fake-cookie-value")
 		store.Set("AccountId", userSessionDetail.AccountId)
@@ -160,7 +166,10 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 		store.Set("UserId", userSessionDetail.UserId)
 		store.Set(APPID, onUrl.AppId)
-		store.Set("UserFunctions", userFunctions)
+		if store.Get(APPID) != nil {
+			log.Printf("APPID before to save: %s", store.Get(APPID).(string))
+		}
+		store.Set("UserFunctions", string(userFunctionsArr))
 		setSessionTime(store)
 		if storeArr, err := json.Marshal(store); err == nil {
 			log.Printf("Session to save %s", string(storeArr))
