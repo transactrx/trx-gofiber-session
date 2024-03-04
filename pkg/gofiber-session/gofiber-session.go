@@ -50,7 +50,7 @@ func SessionRequire(config Config) fiber.Handler {
 
 }
 
-func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler {
+func ProxyAuthRequireV2(config Config, whiteListPrefixes []string, functions []string) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		if whiteListPrefixes != nil && len(whiteListPrefixes) > 0 {
@@ -116,29 +116,21 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 			return ctx.Redirect(loginUrl)
 		}
 
-		//since we have trxISAT, we can verify the user
-		log.Print("New Session, verify identity with IdentityService!")
-		req, _ := http.NewRequest(http.MethodPost, config.CredentialUrl, bytes.NewBuffer([]byte(onUrl.TrxISAT)))
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
+		userSessionDetail, err := getUserDetails(config, onUrl.TrxISAT)
 		if err != nil {
 			log.Printf("Error user authentication: %v", err)
-			return ctx.Redirect(loginUrl)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-			log.Printf("Identity Status Code %v", resp.StatusCode)
-			return ctx.Redirect(loginUrl)
+			ctx.Redirect(loginUrl)
 		}
 
-		//Read session details data from identity resp
-		userSessionDetail := SessionDetails{}
-		err = json.NewDecoder(resp.Body).Decode(&userSessionDetail)
+		userFunctions, err := fetchUserFunctionsByToken(config, onUrl.TrxISAT, functions)
 		if err != nil {
-			log.Printf("Session Details resp error %v", err)
-			return ctx.Redirect(loginUrl)
+			ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{"status": http.StatusInternalServerError, "code": "Error-while-verifying-user-access", "message": "Error while verifying user access."})
+			return fmt.Errorf("Error while verifying user access.")
+		}
+
+		if len(userFunctions) == 0 {
+			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
+			return fmt.Errorf("Unauthorized Access")
 		}
 
 		store.Set(STORED_COOKIE_NAME, "fake-cookie-value")
@@ -148,6 +140,7 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 		store.Set("DefaultProfile", userSessionDetail.DefaultProfile)
 		store.Set("UserId", userSessionDetail.UserId)
 		store.Set(APPID, onUrl.AppId)
+		store.Set("UserFunctions", userFunctions)
 		setSessionTime(store)
 		if err := ctx.Next(); err != nil {
 			return err
@@ -155,6 +148,75 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 
 		return nil
 	}
+}
+
+func fetchUserFunctionsByToken(config Config, token string, functions []string) ([]UserFunctionItem, error) {
+
+	userFunctionBody := UserFunctionBody{token, functions}
+	userFunctionBodyJson, err := json.Marshal(userFunctionBody)
+
+	if config.FetchUserFunctionsUrl == nil {
+		return nil, fmt.Errorf("FetchUserFunctionsUrl is required")
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, *config.FetchUserFunctionsUrl, bytes.NewBuffer(userFunctionBodyJson))
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+		return nil, err
+	}
+	functionResponse := []UserFunctionItem{}
+	err = json.NewDecoder(resp.Body).Decode(&functionResponse)
+	if err != nil {
+		log.Printf("Session Details resp error %v", err)
+		return nil, err
+	}
+
+	return functionResponse, nil
+}
+
+type UserFunctionBody struct {
+	Token               string   `json:"token"`
+	RequestFunctionList []string `json:"functions"`
+}
+type UserFunctionItem struct {
+	Id    string `json:"id"`
+	Value string `json:"value"`
+}
+
+func getUserDetails(config Config, token string) (*SessionDetails, error) {
+
+	//since we have trxISAT, we can verify the user
+	log.Print("New Session, verify identity with IdentityService!")
+	req, _ := http.NewRequest(http.MethodPost, config.CredentialUrl, bytes.NewBuffer([]byte(token)))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error user authentication: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		log.Printf("Identity Status Code %v", resp.StatusCode)
+		return nil, err
+	}
+
+	//Read session details data from identity resp
+	userSessionDetail := SessionDetails{}
+	err = json.NewDecoder(resp.Body).Decode(&userSessionDetail)
+	if err != nil {
+		log.Printf("Session Details resp error %v", err)
+		return nil, err
+	}
+
+	return &userSessionDetail, nil
 }
 
 func setSessionTime(store *session.Store) {
