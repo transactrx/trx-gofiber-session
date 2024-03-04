@@ -53,9 +53,35 @@ func CreateConfig(loginUrl string, credentialUrl string, session *session.Sessio
 	}
 
 	return Config{
-		LoginUrl:      loginUrl,
-		CredentialUrl: credentialUrl,
-		Session:       session,
-		CookieName:    cookieName,
+		LoginUrl:              loginUrl,
+		CredentialUrl:         credentialUrl,
+		Session:               session,
+		CookieName:            cookieName,
+		FetchUserFunctionsUrl: nil,
+	}, nil
+}
+
+func CreateConfigV2(loginUrl string, credentialUrl string, session *session.Session, cookieName string, fetchUserFunctionsUrl *string) (Config, error) {
+
+	if len(strings.TrimSpace(loginUrl)) == 0 {
+		return Config{}, fmt.Errorf("loginUrl is required")
+	}
+	if len(strings.TrimSpace(credentialUrl)) == 0 {
+		return Config{}, fmt.Errorf("credentialUrl is required")
+	}
+	if session == nil {
+		return Config{}, fmt.Errorf("session is required")
+	}
+
+	if len(strings.TrimSpace(cookieName)) == 0 {
+		return Config{}, fmt.Errorf("cookieName is required")
+	}
+
+	return Config{
+		LoginUrl:              loginUrl,
+		CredentialUrl:         credentialUrl,
+		Session:               session,
+		CookieName:            cookieName,
+		FetchUserFunctionsUrl: fetchUserFunctionsUrl,
 	}, nil
 }
