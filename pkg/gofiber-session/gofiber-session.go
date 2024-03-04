@@ -66,9 +66,11 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		defer store.Save()
 
 		if store != nil {
-			if storeArr, err := json.Marshal(store); err == nil {
-				log.Printf("Session %s", string(storeArr))
-			}
+			log.Printf("STORED_COOKIE_NAME: %v, SESSION_DATE_ADDED: %v, APPID: %v", store.Get(STORED_COOKIE_NAME), store.Get(SESSION_DATE_ADDED), store.Get(APPID))
+			
+			//if storeArr, err := json.Marshal(store); err == nil {
+			//	log.Printf("Session %s", string(storeArr))
+			//}
 		} else {
 			log.Printf("Session is nil")
 		}
@@ -162,11 +164,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store.Set("UserFunctions", userFunctions)
 		setSessionTime(store)
 		log.Printf("Session is active, continue to next middleware")
-		if err := ctx.Next(); err != nil {
-			return err
-		}
-
-		return nil
+		return ctx.Next()
 	}
 }
 
@@ -258,6 +256,10 @@ func setSessionTime(store *session.Store) {
 
 func isSessionActive(dateAddedStr string) bool {
 	log.Printf("Checking if session is active %s", dateAddedStr)
+	if len(strings.TrimSpace(dateAddedStr)) == 0 {
+		log.Printf("dateAddedStr is empty")
+		return false
+	}
 	dateAddedTime, err := time.Parse(time.RFC3339, dateAddedStr)
 	if err != nil {
 		log.Printf("Error parsing dateAddedStr: %s", dateAddedStr)
@@ -268,6 +270,7 @@ func isSessionActive(dateAddedStr string) bool {
 		log.Printf("Session is older than 1 hour, redirecting to login")
 		return false
 	}
+
 	return true
 }
 
