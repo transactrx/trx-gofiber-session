@@ -50,11 +50,11 @@ func SessionRequire(config Config) fiber.Handler {
 
 }
 
-func ProxyAuthRequireV2(config Config, whiteListPrefixes []string, functions []string) fiber.Handler {
+func ProxyAuthRequireV2(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
-		if whiteListPrefixes != nil && len(whiteListPrefixes) > 0 {
-			for _, route := range whiteListPrefixes {
+		if config.WhiteRoutePrefixes != nil && len(config.WhiteRoutePrefixes) > 0 {
+			for _, route := range config.WhiteRoutePrefixes {
 				if strings.HasPrefix(ctx.Path(), route) {
 					log.Printf("Open Route: %s, - ctx.Path(): %s", route, ctx.Path())
 					return ctx.Next()
@@ -122,7 +122,7 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string, functions []s
 			ctx.Redirect(loginUrl)
 		}
 
-		userFunctions, err := fetchUserFunctionsByToken(config, onUrl.TrxISAT, functions)
+		userFunctions, err := fetchUserFunctionsByToken(config, onUrl.TrxISAT)
 		if err != nil {
 			ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{"status": http.StatusInternalServerError, "code": "Error-while-verifying-user-access", "message": "Error while verifying user access."})
 			return fmt.Errorf("Error while verifying user access.")
@@ -150,10 +150,14 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string, functions []s
 	}
 }
 
-func fetchUserFunctionsByToken(config Config, token string, functions []string) ([]UserFunctionItem, error) {
+func fetchUserFunctionsByToken(config Config, token string) ([]UserFunctionItem, error) {
 
-	userFunctionBody := UserFunctionBody{token, functions}
+	log.Printf("Fetch user functions Token: %s", token)
+
+	userFunctionBody := UserFunctionBody{token, config.Functions}
 	userFunctionBodyJson, err := json.Marshal(userFunctionBody)
+
+	log.Printf("Fetch user functions body: %s", string(userFunctionBodyJson))
 
 	if config.FetchUserFunctionsUrl == nil {
 		return nil, fmt.Errorf("FetchUserFunctionsUrl is required")

@@ -13,6 +13,8 @@ type Config struct {
 	CookieName            string
 	ApplicationID         string
 	FetchUserFunctionsUrl *string
+	WhiteRoutePrefixes    []string
+	Functions             []string
 }
 
 type IdentityObj struct {
@@ -58,10 +60,12 @@ func CreateConfig(loginUrl string, credentialUrl string, session *session.Sessio
 		Session:               session,
 		CookieName:            cookieName,
 		FetchUserFunctionsUrl: nil,
+		WhiteRoutePrefixes:    nil,
+		Functions:             nil,
 	}, nil
 }
 
-func CreateConfigV2(loginUrl string, credentialUrl string, session *session.Session, cookieName string, fetchUserFunctionsUrl *string) (Config, error) {
+func CreateConfigV2(loginUrl string, credentialUrl string, session *session.Session, cookieName string, fetchUserFunctionsUrl *string, whiteRoutePrefixes []string, appFunctions []string) (Config, error) {
 
 	if len(strings.TrimSpace(loginUrl)) == 0 {
 		return Config{}, fmt.Errorf("loginUrl is required")
@@ -83,5 +87,7 @@ func CreateConfigV2(loginUrl string, credentialUrl string, session *session.Sess
 		Session:               session,
 		CookieName:            cookieName,
 		FetchUserFunctionsUrl: fetchUserFunctionsUrl,
+		WhiteRoutePrefixes:    whiteRoutePrefixes,
+		Functions:             appFunctions,
 	}, nil
 }
