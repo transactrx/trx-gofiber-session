@@ -152,7 +152,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 
 func fetchUserFunctionsByToken(config Config, token string) ([]UserFunctionItem, error) {
 
-	log.Print("Fetch user functions Token: %s", token)
+	log.Printf("Fetch user functions Token: %s", token)
 
 	userFunctionBody := UserFunctionBody{token, config.Functions}
 	userFunctionBodyJson, err := json.Marshal(userFunctionBody)
