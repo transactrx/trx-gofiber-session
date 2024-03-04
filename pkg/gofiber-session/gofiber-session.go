@@ -70,9 +70,11 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		if config.InvalidateSessionPath != nil && len(*config.InvalidateSessionPath) > 0 && strings.HasPrefix(ctx.Path(), *config.InvalidateSessionPath) {
 			log.Printf("->InvalidateSessionPath: %s, - ctx.Path(): %s", *config.InvalidateSessionPath, ctx.Path())
 			store.Set(SESSION_DATE_ADDED, "")
+			return ctx.Next()
 		}
 
 		dateAdded := store.Get(SESSION_DATE_ADDED)
+		log.Printf("dateAdded: %v", dateAdded)
 		if dateAdded != nil && isSessionActive(dateAdded.(string)) {
 			setSessionTime(store)
 			return ctx.Next()
