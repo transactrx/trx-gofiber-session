@@ -146,7 +146,7 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 		store.Set("AppId", onUrl.AppId)
 		currentTime := time.Now().Format(time.RFC3339)
 		log.Printf("Saving Current Time for active session: %s", currentTime)
-		store.Set("createTime", currentTime)
+		store.Set(SESSION_DATE_ADDED, currentTime)
 		if err := ctx.Next(); err != nil {
 			return err
 		}
