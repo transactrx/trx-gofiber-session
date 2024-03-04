@@ -258,6 +258,10 @@ func setSessionTime(store *session.Store) {
 
 func isSessionActive(dateAddedStr string) bool {
 	log.Printf("Checking if session is active %s", dateAddedStr)
+	if len(strings.TrimSpace(dateAddedStr)) == 0 {
+		log.Printf("dateAddedStr is empty")
+		return false
+	}
 	dateAddedTime, err := time.Parse(time.RFC3339, dateAddedStr)
 	if err != nil {
 		log.Printf("Error parsing dateAddedStr: %s", dateAddedStr)
@@ -268,6 +272,7 @@ func isSessionActive(dateAddedStr string) bool {
 		log.Printf("Session is older than 1 hour, redirecting to login")
 		return false
 	}
+
 	return true
 }
 
