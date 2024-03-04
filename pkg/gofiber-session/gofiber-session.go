@@ -83,6 +83,13 @@ func ProxyAuthRequireV2(config Config, whiteListPrefixes []string) fiber.Handler
 			return fmt.Errorf("unauthorized Access")
 		}
 
+		log.Printf("Full Querystring before parse: %s", string(ctx.Request().URI().QueryString()))
+		for key, values := range q {
+			for _, value := range values {
+				log.Printf("Parameter '%s' has value '%s'", key, value)
+			}
+		}
+
 		//Read URL Querystring
 		onUrl := IdentityObj{}
 		onUrl.AppId = q.Get("appid")
