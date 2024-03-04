@@ -66,8 +66,8 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		defer store.Save()
 
 		if store != nil {
-			//log.Printf("STORED_COOKIE_NAME: %v, SESSION_DATE_ADDED: %v, APPID: %v", store.Get(STORED_COOKIE_NAME), store.Get(SESSION_DATE_ADDED), store.Get(APPID))
-			if storeArr, err := json.Marshal(store); err == nil {
+			log.Printf("STORED_COOKIE_NAME: %v, SESSION_DATE_ADDED: %v, APPID: %v", store.Get(STORED_COOKIE_NAME), store.Get(SESSION_DATE_ADDED), store.Get(APPID))
+			if storeArr, err := json.Marshal(*store); err == nil {
 				log.Printf("Session %s", string(storeArr))
 			}
 		} else {
