@@ -66,11 +66,10 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		defer store.Save()
 
 		if store != nil {
-			log.Printf("STORED_COOKIE_NAME: %v, SESSION_DATE_ADDED: %v, APPID: %v", store.Get(STORED_COOKIE_NAME), store.Get(SESSION_DATE_ADDED), store.Get(APPID))
-			
-			//if storeArr, err := json.Marshal(store); err == nil {
-			//	log.Printf("Session %s", string(storeArr))
-			//}
+			//log.Printf("STORED_COOKIE_NAME: %v, SESSION_DATE_ADDED: %v, APPID: %v", store.Get(STORED_COOKIE_NAME), store.Get(SESSION_DATE_ADDED), store.Get(APPID))
+			if storeArr, err := json.Marshal(store); err == nil {
+				log.Printf("Session %s", string(storeArr))
+			}
 		} else {
 			log.Printf("Session is nil")
 		}
@@ -163,7 +162,14 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store.Set(APPID, onUrl.AppId)
 		store.Set("UserFunctions", userFunctions)
 		setSessionTime(store)
+		if storeArr, err := json.Marshal(store); err == nil {
+			log.Printf("Session to save %s", string(storeArr))
+		}
 		log.Printf("Session is active, continue to next middleware")
+		err = store.Save()
+		if err != nil {
+			log.Printf("Error while saving session: %v", err)
+		}
 		return ctx.Next()
 	}
 }
