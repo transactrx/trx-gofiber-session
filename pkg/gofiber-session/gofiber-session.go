@@ -127,15 +127,12 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			loginUrl = fmt.Sprintf("%s?appid=%s", config.LoginUrl, onUrl.AppId)
 
 			log.Printf("Redirect to identity service: %s", loginUrl)
-			ctx.Set("Access-Control-Allow-Origin", "https://app.mytransactrx.io")
 			return ctx.Redirect(loginUrl)
 		}
 
 		userSessionDetail, err := getUserDetails(config, onUrl.TrxISAT)
 		if err != nil {
 			log.Printf("Error user authentication: %v", err)
-			ctx.Set("Access-Control-Allow-Origin", "https://app.mytransactrx.io")
-			ctx.Set("Access-Control-Allow-Origin", "https://app.mytransactrx.io")
 			return ctx.Redirect(loginUrl)
 		}
 
