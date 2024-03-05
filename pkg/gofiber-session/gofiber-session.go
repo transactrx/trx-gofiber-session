@@ -68,16 +68,6 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		store := config.Session.Get(ctx)
 		defer store.Save()
 
-		if config.InvalidateSessionPath != nil && len(*config.InvalidateSessionPath) > 0 && strings.HasPrefix(ctx.Path(), *config.InvalidateSessionPath) {
-			log.Printf("->InvalidateSessionPath: %s, - ctx.Path(): %s", *config.InvalidateSessionPath, ctx.Path())
-			store.Set(SESSION_DATE_ADDED, "")
-			if err := RemoveResponseHeader(ctx, TRX_ISAT); err != nil {
-				log.Printf("Error while removing response header: %v", err)
-				return err
-			}
-			return ctx.Next()
-		}
-
 		dateAdded := store.Get(SESSION_DATE_ADDED)
 		log.Printf("dateAdded: %v", dateAdded)
 		if dateAdded != nil && isSessionActive(dateAdded.(string)) {
