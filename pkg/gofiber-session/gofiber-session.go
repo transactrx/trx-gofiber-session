@@ -20,6 +20,7 @@ type Session struct {
 const INVALID_ACCESS = "INVALID-ACCESS"
 const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
 const SESSION_DATE_ADDED = "SESSION_DATE_ADDED"
+const TRX_ISAT = "TRX-ISAT"
 const APPID = "appid"
 
 func (s *Session) GetTest() string {
@@ -70,6 +71,10 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		if config.InvalidateSessionPath != nil && len(*config.InvalidateSessionPath) > 0 && strings.HasPrefix(ctx.Path(), *config.InvalidateSessionPath) {
 			log.Printf("->InvalidateSessionPath: %s, - ctx.Path(): %s", *config.InvalidateSessionPath, ctx.Path())
 			store.Set(SESSION_DATE_ADDED, "")
+			if err := RemoveResponseHeader(ctx, TRX_ISAT); err != nil {
+				log.Printf("Error while removing response header: %v", err)
+				return err
+			}
 			return ctx.Next()
 		}
 
@@ -106,7 +111,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			onUrl.AppId = store.Get(APPID).(string)
 		}
 
-		onUrl.TrxISAT = q.Get("TRX-ISAT")
+		onUrl.TrxISAT = q.Get(TRX_ISAT)
 
 		loginUrl := ""
 		if len(strings.TrimSpace(onUrl.TrxISAT)) == 0 {
@@ -122,13 +127,21 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			loginUrl = fmt.Sprintf("%s?appid=%s", config.LoginUrl, onUrl.AppId)
 
 			log.Printf("Redirect to identity service: %s", loginUrl)
+			ctx.Set("Access-Control-Allow-Origin", "https://app.mytransactrx.io")
 			return ctx.Redirect(loginUrl)
 		}
 
 		userSessionDetail, err := getUserDetails(config, onUrl.TrxISAT)
 		if err != nil {
 			log.Printf("Error user authentication: %v", err)
+			ctx.Set("Access-Control-Allow-Origin", "https://app.mytransactrx.io")
+			ctx.Set("Access-Control-Allow-Origin", "https://app.mytransactrx.io")
 			return ctx.Redirect(loginUrl)
+		}
+
+		if err := SetResponseHeader(ctx, TRX_ISAT, onUrl.TrxISAT); err != nil {
+			log.Printf("Error while setting response header: %v", err)
+			return fmt.Errorf("set-response-header-error")
 		}
 
 		userFunctions, err := fetchUserFunctionsByToken(config, onUrl.TrxISAT)
@@ -173,6 +186,34 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 
 		return ctx.Next()
 	}
+}
+
+func SetResponseHeader(ctx *fiber.Ctx, key string, value string) error {
+	if ctx == nil || ctx.Response() == nil {
+		return fmt.Errorf("ctx or ctx.Response() is nil")
+	}
+	ctx.Response().Header.Set(key, value)
+	return nil
+}
+
+func RemoveResponseHeader(ctx *fiber.Ctx, key string) error {
+	if ctx == nil || ctx.Response() == nil {
+		return fmt.Errorf("ctx or ctx.Response() is nil")
+	}
+	ctx.Response().Header.Del(key)
+	return nil
+
+}
+
+func GetResponseHeader(ctx *fiber.Ctx, key string) (string, bool) {
+	if ctx == nil || ctx.Request() == nil {
+		return "", false
+	}
+	valueArr := ctx.Request().Header.Peek(key)
+	if valueArr != nil && len(valueArr) > 0 {
+		return string(valueArr), true
+	}
+	return "", false
 }
 
 func fetchUserFunctionsByToken(config Config, token string) ([]UserFunctionItem, error) {
@@ -220,6 +261,7 @@ type UserFunctionBody struct {
 	Token               string   `json:"token"`
 	RequestFunctionList []string `json:"functions"`
 }
+
 type UserFunctionItem struct {
 	Id    string `json:"id"`
 	Value string `json:"value"`
