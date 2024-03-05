@@ -128,10 +128,11 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 
 			log.Printf("Redirect to identity service: %s", loginUrl)
 			//TEST
-			allowedOrigins := []string{"https://n8n-data-collections.mytransactrx.io", "https://app.mytransactrx.io", "https://localhost", "http://localhost"}
+			allowedOrigins := []string{"https://n8n-data-collections.mytransactrx.io", "https://app.mytransactrx.io", "https://localhost", "http://localhost", ""}
 			origin := ctx.Get("Origin")
 			for _, allowedOrigin := range allowedOrigins { // Iterate over the allowed origins
 				if origin == allowedOrigin {
+					log.Printf("Setting Access-Control-Allow-Origin: %s", allowedOrigin)
 					ctx.Set("Access-Control-Allow-Origin", allowedOrigin) // Set the header with a single string value
 					break                                                 // Stop checking after finding a match
 				}
@@ -143,10 +144,11 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		if err != nil {
 			log.Printf("Error user authentication: %v", err)
 			//TEST
-			allowedOrigins := []string{"https://n8n-data-collections.mytransactrx.io", "https://app.mytransactrx.io", "https://localhost", "http://localhost"}
+			allowedOrigins := []string{"https://n8n-data-collections.mytransactrx.io", "https://app.mytransactrx.io", "https://localhost", "http://localhost", ""}
 			origin := ctx.Get("Origin")
 			for _, allowedOrigin := range allowedOrigins { // Iterate over the allowed origins
 				if origin == allowedOrigin {
+					log.Printf("Setting Access-Control-Allow-Origin: %s", allowedOrigin)
 					ctx.Set("Access-Control-Allow-Origin", allowedOrigin) // Set the header with a single string value
 					break                                                 // Stop checking after finding a match
 				}
