@@ -53,7 +53,7 @@ func SessionRequire(config Config) fiber.Handler {
 
 func ProxyAuthRequireV2(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-
+		log.Print("ProxyAuthRequireV2")
 		if config.WhiteRoutePrefixes != nil && len(config.WhiteRoutePrefixes) > 0 {
 			for _, route := range config.WhiteRoutePrefixes {
 				if strings.HasPrefix(ctx.Path(), route) {
@@ -127,12 +127,30 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			loginUrl = fmt.Sprintf("%s?appid=%s", config.LoginUrl, onUrl.AppId)
 
 			log.Printf("Redirect to identity service: %s", loginUrl)
+			//TEST
+			allowedOrigins := []string{"https://n8n-data-collections.mytransactrx.io", "https://app.mytransactrx.io", "https://localhost", "http://localhost"}
+			origin := ctx.Get("Origin")
+			for _, allowedOrigin := range allowedOrigins { // Iterate over the allowed origins
+				if origin == allowedOrigin {
+					ctx.Set("Access-Control-Allow-Origin", allowedOrigin) // Set the header with a single string value
+					break                                                 // Stop checking after finding a match
+				}
+			}
 			return ctx.Redirect(loginUrl)
 		}
 
 		userSessionDetail, err := getUserDetails(config, onUrl.TrxISAT)
 		if err != nil {
 			log.Printf("Error user authentication: %v", err)
+			//TEST
+			allowedOrigins := []string{"https://n8n-data-collections.mytransactrx.io", "https://app.mytransactrx.io", "https://localhost", "http://localhost"}
+			origin := ctx.Get("Origin")
+			for _, allowedOrigin := range allowedOrigins { // Iterate over the allowed origins
+				if origin == allowedOrigin {
+					ctx.Set("Access-Control-Allow-Origin", allowedOrigin) // Set the header with a single string value
+					break                                                 // Stop checking after finding a match
+				}
+			}
 			return ctx.Redirect(loginUrl)
 		}
 
