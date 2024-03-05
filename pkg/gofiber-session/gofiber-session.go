@@ -130,6 +130,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			//TEST
 			allowedOrigins := []string{"https://n8n-data-collections.mytransactrx.io", "https://app.mytransactrx.io", "https://localhost", "http://localhost", ""}
 			origin := ctx.Get("Origin")
+			log.Printf("Origin from ProxyAuthRequireV2: %s", origin)
 			for _, allowedOrigin := range allowedOrigins { // Iterate over the allowed origins
 				if origin == allowedOrigin {
 					log.Printf("Setting Access-Control-Allow-Origin: %s", allowedOrigin)
@@ -146,6 +147,7 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			//TEST
 			allowedOrigins := []string{"https://n8n-data-collections.mytransactrx.io", "https://app.mytransactrx.io", "https://localhost", "http://localhost", ""}
 			origin := ctx.Get("Origin")
+			log.Printf("Origin from ProxyAuthRequireV2: %s", origin)
 			for _, allowedOrigin := range allowedOrigins { // Iterate over the allowed origins
 				if origin == allowedOrigin {
 					log.Printf("Setting Access-Control-Allow-Origin: %s", allowedOrigin)
