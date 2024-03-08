@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -21,6 +22,8 @@ const INVALID_ACCESS = "INVALID-ACCESS"
 const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
 const SESSION_DATE_ADDED = "SESSION_DATE_ADDED"
 const TRX_ISAT = "TRX-ISAT"
+const TRX_USER_FUNCTIONS = "USER_FUNCTIONS"
+const TRX_USER_DETAILS = "TRX_USER_DETAILS"
 const APPID = "appid"
 
 func (s *Session) GetTest() string {
@@ -51,6 +54,7 @@ func SessionRequire(config Config) fiber.Handler {
 
 }
 
+//Deprecated, it will be only on SecureAppProxy
 func ProxyAuthRequireV2(config Config) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
@@ -118,17 +122,22 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			return ctx.Redirect(loginUrl)
 		}
 
+		//USER DETAILS
 		userSessionDetail, err := getUserDetails(config, onUrl.TrxISAT)
 		if err != nil {
 			log.Printf("Error user authentication: %v", err)
 			return ctx.Redirect(loginUrl)
 		}
-
-		if err := SetResponseHeader(ctx, TRX_ISAT, onUrl.TrxISAT); err != nil {
-			log.Printf("Error while setting response header: %v", err)
-			return fmt.Errorf("set-response-header-error")
+		userSessionDetailArr, err := json.Marshal(userSessionDetail)
+		if err != nil {
+			log.Printf("Error while marshalling userSessionDetail: %v", err)
+			return ctx.Redirect(loginUrl)
 		}
+		ctx.Response().Header.Set(TRX_USER_DETAILS, string(userSessionDetailArr))
+		log.Printf("UserSessionDetail to save %s", string(userSessionDetailArr))
+		ctx.Response().Header.Set(TRX_ISAT, onUrl.TrxISAT)
 
+		//USER FUNCTIONS
 		userFunctions, err := fetchUserFunctionsByToken(config, onUrl.TrxISAT)
 		if err != nil {
 			log.Printf("Error while verifying user access.")
@@ -136,15 +145,38 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 			return fmt.Errorf("Error while verifying user access.")
 		}
 
-		if functionResponseArr, err := json.Marshal(userFunctions); err == nil {
-			log.Printf("-> User Functions: %s", string(functionResponseArr))
-		}
-
 		if len(userFunctions) == 0 {
 			log.Printf("Unauthorized Access. User does not have any functions")
 			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
 			return fmt.Errorf("Unauthorized Access")
 		}
+
+		//check if user has access to the app functions
+		if len(config.Functions) > 0 {
+			authorized := false
+			for _, appFn := range config.Functions {
+				for _, userFn := range userFunctions {
+
+					result, err := strconv.ParseBool(str)
+					if err != nil {
+						fmt.Println("Error converting string to bool:", err)
+					} else {
+						fmt.Printf("The string \"%s\" is converted to bool: %t\n", str, result)
+					}
+
+					if userFn.Id == appFn && co userFn.Value ==  && {
+						authorized = true
+						break
+					}
+				}
+			}
+			if !authorized {
+				log.Printf("Unauthorized Access. User does not have access to the required functions")
+				ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
+				return fmt.Errorf("Unauthorized Access")
+			}
+		}
+
 		userFunctionsArr, err := json.Marshal(userFunctions)
 		if err != nil {
 			log.Printf("Error while marshalling userFunctions: %v", err)
@@ -152,7 +184,9 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 		}
 		userFunctionsStr := string(userFunctionsArr)
 		log.Printf("UserFunctions to save %s", userFunctionsStr)
+		ctx.Response().Header.Set(TRX_USER_FUNCTIONS, userFunctionsStr)
 
+		//SAVE SESSION
 		store.Set(STORED_COOKIE_NAME, "fake-cookie-value")
 		store.Set("AccountId", userSessionDetail.AccountId)
 		store.Set("FirstName", userSessionDetail.FirstName)
@@ -171,14 +205,6 @@ func ProxyAuthRequireV2(config Config) fiber.Handler {
 
 		return ctx.Next()
 	}
-}
-
-func SetResponseHeader(ctx *fiber.Ctx, key string, value string) error {
-	if ctx == nil || ctx.Response() == nil {
-		return fmt.Errorf("ctx or ctx.Response() is nil")
-	}
-	ctx.Response().Header.Set(key, value)
-	return nil
 }
 
 func RemoveResponseHeader(ctx *fiber.Ctx, key string) error {
