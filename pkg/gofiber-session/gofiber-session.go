@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/session/v2"
 	"log"
 	"net/http"
 	"net/url"
@@ -17,6 +18,8 @@ type Session struct {
 
 const INVALID_ACCESS = "INVALID-ACCESS"
 const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
+const TRX_USER_DETAILS = "TRX_USER_DETAILS"
+const TRX_VIEW = "TRX_VIEW"
 
 func (s *Session) GetTest() string {
 	return s.Test
@@ -141,5 +144,42 @@ func AuthRequire(config Config) fiber.Handler {
 		}
 
 		return nil
+	}
+}
+
+func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		log.Printf("-> AuthorizationFilter -  %s", ctx.OriginalURL())
+		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
+		if err != nil {
+			log.Printf(" ERROR parsing query: %v", err)
+			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
+			return fmt.Errorf("Unauthorized Access")
+		}
+
+		store := session.Get(ctx)
+		defer store.Save()
+
+		//VIEW
+		viewStored := store.Get(TRX_VIEW)
+		viewHeaderBA := ctx.Request().Header.Peek(TRX_VIEW)
+		if (viewHeaderBA != nil && len(viewHeaderBA) > 0) && (viewStored == nil || len(viewStored.(string)) == 0 || viewStored.(string) != string(viewHeaderBA)) {
+			store.Set(TRX_VIEW, string(viewHeaderBA))
+		}
+
+		userDetails := store.Get(TRX_USER_DETAILS)
+		if userDetails != nil && len(userDetails.(string)) > 0 {
+			return ctx.Next()
+		}
+
+		userDetailsStr := ctx.Request().Header.Peek(TRX_USER_DETAILS)
+		if userDetailsStr == nil || len(userDetailsStr) == 0 {
+			log.Print("Unauthorized Access: TRX_USER_DETAILS header does not exists")
+			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
+			return fmt.Errorf("unauthorized Access")
+		}
+
+		store.Set(TRX_USER_DETAILS, string(userDetailsStr))
+		return ctx.Next()
 	}
 }
