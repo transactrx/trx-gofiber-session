@@ -150,12 +150,6 @@ func AuthRequire(config Config) fiber.Handler {
 func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		log.Printf("-> AuthorizationFilter -  %s", ctx.OriginalURL())
-		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
-		if err != nil {
-			log.Printf(" ERROR parsing query: %v", err)
-			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
-			return fmt.Errorf("Unauthorized Access")
-		}
 
 		store := session.Get(ctx)
 		defer store.Save()
