@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/session/v2"
 	"log"
@@ -20,6 +21,7 @@ const INVALID_ACCESS = "INVALID-ACCESS"
 const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
 const TRX_USER_DETAILS = "TRX_USER_DETAILS"
 const TRX_VIEW = "TRX_VIEW"
+const VIEW = "VIEW"
 
 func (s *Session) GetTest() string {
 	return s.Test
@@ -149,31 +151,77 @@ func AuthRequire(config Config) fiber.Handler {
 
 func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		log.Printf("-> AuthorizationFilter -  %s", ctx.OriginalURL())
+		//log.Println("-------------------------------------------")
+		//log.Printf("-> AuthorizationFilter -  %s", ctx.OriginalURL())
+
+		if websocket.IsWebSocketUpgrade(ctx) {
+			return ctx.Next()
+		}
+
+		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
+		if err != nil {
+			log.Printf(" ERROR parsing query: %v", err)
+			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
+			return fmt.Errorf("Unauthorized Access")
+		}
 
 		store := session.Get(ctx)
 		defer store.Save()
 
 		//VIEW
-		viewStored := store.Get(TRX_VIEW)
-		viewHeaderBA := ctx.Request().Header.Peek(TRX_VIEW)
-		if (viewHeaderBA != nil && len(viewHeaderBA) > 0) && (viewStored == nil || len(viewStored.(string)) == 0 || viewStored.(string) != string(viewHeaderBA)) {
-			store.Set(TRX_VIEW, string(viewHeaderBA))
+		viewStore := getFromStore(VIEW, store)
+		viewHeader := getFromHeader(TRX_VIEW, ctx)
+		if viewHeader != nil && len(*viewHeader) > 0 && (viewStore == nil || len(*viewStore) == 0 || *viewStore != *viewStore) {
+			store.Set("VIEW", viewHeader)
+		} else {
+			viewQuery := q.Get("view")
+			if viewQuery != "" && (viewStore == nil || len(*viewStore) == 0 || *viewStore != viewQuery) {
+				store.Set(VIEW, viewQuery)
+			}
 		}
 
-		userDetails := store.Get(TRX_USER_DETAILS)
-		if userDetails != nil && len(userDetails.(string)) > 0 {
-			return ctx.Next()
-		}
+		userDetailsStoreStr := getFromStore(TRX_USER_DETAILS, store)
+		userDetailsHeaderStr := getFromHeader(TRX_USER_DETAILS, ctx)
 
-		userDetailsStr := ctx.Request().Header.Peek(TRX_USER_DETAILS)
-		if userDetailsStr == nil || len(userDetailsStr) == 0 {
-			log.Print("Unauthorized Access: TRX_USER_DETAILS header does not exists")
+		//if userDetailsStoreStr != nil && len(*userDetailsStoreStr) > 0 {
+		//	log.Printf("User Details Store has value.", *userDetailsStoreStr)
+		//}
+
+		if (userDetailsStoreStr == nil || len(*userDetailsStoreStr) == 0) && (userDetailsHeaderStr == nil || len(*userDetailsHeaderStr) == 0) {
 			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
 			return fmt.Errorf("unauthorized Access")
 		}
 
-		store.Set(TRX_USER_DETAILS, string(userDetailsStr))
+		if userDetailsHeaderStr == nil || len(*userDetailsHeaderStr) == 0 {
+			//log.Print("user Details Header is empty and will continue use from store, then next() ")
+			return ctx.Next()
+		}
+
+		if userDetailsStoreStr == nil || *userDetailsHeaderStr != *userDetailsStoreStr {
+			//log.Print("user Details Header !=  user Details Store, then update it on store")
+			toStore := *userDetailsHeaderStr
+			store.Set(TRX_USER_DETAILS, toStore)
+		}
+
 		return ctx.Next()
 	}
+}
+
+func getFromStore(key string, store *session.Store) *string {
+
+	viewStoredInt := store.Get(key)
+	if viewStoredInt != nil && len(viewStoredInt.(string)) > 0 {
+		value := viewStoredInt.(string)
+		return &value
+	}
+	return nil
+}
+
+func getFromHeader(key string, ctx *fiber.Ctx) *string {
+	viewHeaderBA := ctx.Request().Header.Peek(key)
+	if viewHeaderBA != nil && len(viewHeaderBA) > 0 {
+		value := string(viewHeaderBA)
+		return &value
+	}
+	return nil
 }
