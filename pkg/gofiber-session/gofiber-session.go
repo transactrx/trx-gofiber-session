@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -149,7 +150,17 @@ func AuthRequire(config Config) fiber.Handler {
 	}
 }
 
+var openResourceRegexp *regexp.Regexp
+
 func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
+	combinedOpenResourcePatterns := ".*/gxt/.*|.*nocache.*|.*\\.cache\\..*|.*\\/bootstrap\\.min\\..*|angular\\.min\\.js|.*\\/zapatec\\/.*\\..*|.*\\/pdfjs\\/.*\\.js(?:\\?.*)?$|.*\\.(jpg|jpeg|png|gif|svg)(?:\\?.*)?$|.*\\.css(?:\\?.*)?$" // .*\.js(?:\?.*)?$
+
+	if len(combinedOpenResourcePatterns) > 0 {
+		var err error
+		if openResourceRegexp, err = regexp.Compile(combinedOpenResourcePatterns); err != nil {
+			log.Panic("Error compiling openResourceRegexp: %v", err)
+		}
+	}
 	return func(ctx *fiber.Ctx) error {
 		//log.Println("-------------------------------------------")
 		//log.Printf("-> AuthorizationFilter -  %s", ctx.OriginalURL())
@@ -163,6 +174,13 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 			log.Printf(" ERROR parsing query: %v", err)
 			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
 			return fmt.Errorf("Unauthorized Access")
+		}
+
+		path := ctx.Path()
+		//CHECK IF URL MATCHES THE OPEN RESOURCE REGEXP. ALLOW ACCESS BECAUSE THESE RESOURCES ARE AUTHORIZED TO BE OPENED DUE TO THEY MUSTILY CAME FROM CLOUDFRONT WITHOUT SESSION
+		if openResourceRegexp != nil && openResourceRegexp.MatchString(path) {
+			log.Printf("Resource Match to Opened Pattern: %s", ctx.OriginalURL())
+			return ctx.Next()
 		}
 
 		store := session.Get(ctx)
