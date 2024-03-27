@@ -189,7 +189,7 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 		//VIEW
 		viewStore := getFromStore(VIEW, store)
 		viewHeader := getFromHeader(TRX_VIEW, ctx)
-		if viewHeader != nil && len(*viewHeader) > 0 && (viewStore == nil || len(*viewStore) == 0 || *viewStore != *viewStore) {
+		if viewHeader != nil && len(*viewHeader) > 0 && (viewStore == nil || len(*viewStore) == 0 || *viewStore != *viewHeader) {
 			store.Set("VIEW", viewHeader)
 		} else {
 			viewQuery := q.Get("view")
