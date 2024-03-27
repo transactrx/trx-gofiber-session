@@ -158,7 +158,7 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 	if len(combinedOpenResourcePatterns) > 0 {
 		var err error
 		if openResourceRegexp, err = regexp.Compile(combinedOpenResourcePatterns); err != nil {
-			log.Panic("Error compiling openResourceRegexp: %v", err)
+			log.Panicf("Error compiling openResourceRegexp: %v", err)
 		}
 	}
 	return func(ctx *fiber.Ctx) error {
