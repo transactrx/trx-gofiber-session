@@ -184,17 +184,19 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 		}
 
 		store := session.Get(ctx)
-		defer store.Save()
+		saveStoreRequired := false
 
 		//VIEW
 		viewStore := getFromStore(VIEW, store)
 		viewHeader := getFromHeader(TRX_VIEW, ctx)
 		if viewHeader != nil && len(*viewHeader) > 0 && (viewStore == nil || len(*viewStore) == 0 || *viewStore != *viewHeader) {
 			store.Set("VIEW", viewHeader)
+			saveStoreRequired = true
 		} else {
 			viewQuery := q.Get("view")
 			if viewQuery != "" && (viewStore == nil || len(*viewStore) == 0 || *viewStore != viewQuery) {
 				store.Set(VIEW, viewQuery)
+				saveStoreRequired = true
 			}
 		}
 
@@ -219,8 +221,12 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 			//log.Print("user Details Header !=  user Details Store, then update it on store")
 			toStore := *userDetailsHeaderStr
 			store.Set(TRX_USER_DETAILS, toStore)
+			saveStoreRequired = true
 		}
 
+		if saveStoreRequired {
+			store.Save()
+		}
 		return ctx.Next()
 	}
 }
