@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/session/v2"
 	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type Session struct {
@@ -248,4 +250,14 @@ func getFromHeader(key string, ctx *fiber.Ctx) *string {
 		return &value
 	}
 	return nil
+}
+
+func ConnectionLimiter(maxConnectCount int, expiration time.Duration, skip func(c *fiber.Ctx) bool) fiber.Handler {
+	limiterConfig := limiter.Config{
+		Max:        maxConnectCount, // 5
+		Expiration: expiration,      // 5 * time.Second, // expiration time of the limit
+		Next:       skip,
+	}
+
+	return limiter.New(limiterConfig)
 }
