@@ -8,9 +8,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/session/v2"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -20,12 +22,6 @@ type Session struct {
 	Test string
 }
 
-const INVALID_ACCESS = "INVALID-ACCESS"
-const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
-const TRX_USER_DETAILS = "TRX_USER_DETAILS"
-const TRX_VIEW = "TRX_VIEW"
-const VIEW = "VIEW"
-
 func (s *Session) GetTest() string {
 	return s.Test
 }
@@ -34,13 +30,18 @@ func SessionRequire(config Config) fiber.Handler {
 
 	return func(ctx *fiber.Ctx) error {
 
+		if config.Session == nil {
+			return unAuthorizedHandler(ctx, "SessionRequire-Middleware. Session is nil.")
+		}
+
 		store := config.Session.Get(ctx)
+		if store == nil {
+			return unAuthorizedHandler(ctx, "SessionRequire-Middleware. Store is nil.")
+		}
+
 		cookie := store.Get(STORED_COOKIE_NAME)
 		if cookie == nil {
-			log.Printf("SessionRequire-Middleware. Unable to find session for Cookie: %s ", STORED_COOKIE_NAME)
-			ctx.SendStatus(http.StatusUnauthorized)
-			return fmt.Errorf("Unauthorized access.")
-			//SendStatus
+			return unAuthorizedHandler(ctx, fmt.Sprintf("SessionRequire-Middleware. Unable to find session for Cookie: %s ", STORED_COOKIE_NAME))
 		} else {
 			log.Printf("SessionRequire-Middleware. Cookie: %s has been found. So far so good Cookie value:%s", STORED_COOKIE_NAME, cookie)
 		}
@@ -66,8 +67,21 @@ func AuthRequire(config Config) fiber.Handler {
 
 		log.Printf("****AuthRequire TRX_CUST_NUM: %s", cookieTk)
 
+		if config.Session == nil {
+			return unAuthorizedHandler(ctx, "AuthRequire-Middleware. Session is nil.")
+		}
+
 		store := config.Session.Get(ctx)
-		defer store.Save()
+		if store == nil {
+			return unAuthorizedHandler(ctx, "AuthRequire-Middleware. Store is nil.")
+		}
+
+		defer func(store *session.Store) {
+			err := store.Save()
+			if err != nil {
+				log.Printf("Error saving store: %v", err)
+			}
+		}(store)
 
 		onUrl := IdentityObj{}
 
@@ -85,18 +99,6 @@ func AuthRequire(config Config) fiber.Handler {
 		onUrl.View = q.Get("view")
 		onUrl.SSCOMMON = q.Get("SSCOMMON")
 		onUrl.ProfileName = q.Get("PROFILENAME")
-
-		////Check if already logged In and Update view if it is required
-		//storedCookie := store.Get(STORED_COOKIE_NAME)
-		//log.Printf("***AuthRequire %s: %s", STORED_COOKIE_NAME, storedCookie)
-		//if storedCookie != nil && storedCookie != "" && storedCookie == cookieTk {
-		//
-		//	log.Printf("Already login")
-		//	if len(onUrl.View) > 0 {
-		//		store.Set("VIEW", onUrl.View)
-		//	}
-		//	return ctx.Next()
-		//}
 
 		log.Print("New Session, verify identity with IdentityService!")
 
@@ -116,7 +118,18 @@ func AuthRequire(config Config) fiber.Handler {
 			log.Printf("Error user authentication: %v", err)
 			return ctx.Redirect(loginUrl)
 		}
-		defer resp.Body.Close()
+
+		if resp == nil {
+			log.Printf("Identity Response is nil")
+			return ctx.Redirect(loginUrl)
+		}
+
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				log.Printf("Error closing body: %v", err)
+			}
+		}(resp.Body)
 
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 			log.Printf("Identity Status Code %v", resp.StatusCode)
@@ -155,7 +168,11 @@ func AuthRequire(config Config) fiber.Handler {
 var openResourceRegexp *regexp.Regexp
 
 func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
-	combinedOpenResourcePatterns := ".*/gxt/.*|.*nocache.*|.*\\.cache\\..*|.*\\/bootstrap\\.min\\..*|angular\\.min\\.js|.*\\/zapatec\\/.*\\..*|.*\\/pdfjs\\/.*\\.js(?:\\?.*)?$|.*\\.(jpg|jpeg|png|gif|svg)(?:\\?.*)?$|.*\\.css(?:\\?.*)?$" // .*\.js(?:\?.*)?$
+	var combinedOpenResourcePatternsEnv = os.Getenv("OPEN_RESOURCE_PATTERNS")
+	combinedOpenResourcePatterns := ".*/gxt/.*|.*nocache.*|.*\\.cache\\..*|.*\\/bootstrap\\.min\\..*|angular\\.min\\.js|.*\\/zapatec\\/.*\\..*|.*\\/pdfjs\\/.*\\.js(?:\\?.*)?$|.*\\.(jpg|jpeg|png|gif|svg|woff2|woff|ttf)(?:\\?.*)?$|.*\\.css(?:\\?.*)?$|.*\\.map(?:\\?.*)?$" // .*\.js(?:\?.*)?$
+	if len(combinedOpenResourcePatternsEnv) > 0 {
+		combinedOpenResourcePatterns = combinedOpenResourcePatternsEnv
+	}
 
 	if len(combinedOpenResourcePatterns) > 0 {
 		var err error
@@ -173,9 +190,7 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 
 		q, err := url.ParseQuery(string(ctx.Request().URI().QueryString()))
 		if err != nil {
-			log.Printf(" ERROR parsing query: %v", err)
-			ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusUnauthorized, "code": "Unauthorized-Access", "message": "Unauthorized Access"})
-			return fmt.Errorf("Unauthorized Access")
+			return unAuthorizedHandler(ctx, fmt.Sprintf("Error parsing query: %v", err))
 		}
 
 		path := ctx.Path()
@@ -185,19 +200,27 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 			return ctx.Next()
 		}
 
+		if session == nil {
+			return unAuthorizedHandler(ctx, "AuthorizationProxyCheck-Middleware. Session is nil.")
+		}
+
 		store := session.Get(ctx)
+		if store == nil {
+			return unAuthorizedHandler(ctx, "AuthorizationProxyCheck-Middleware. Store is nil.")
+		}
 		saveStoreRequired := false
 
 		//VIEW
-		viewStore := getFromStore(VIEW, store)
-		viewHeader := getFromHeader(TRX_VIEW, ctx)
-		if viewHeader != nil && len(*viewHeader) > 0 && (viewStore == nil || len(*viewStore) == 0 || *viewStore != *viewHeader) {
-			store.Set("VIEW", viewHeader)
+		viewInStore := getFromStore(VIEW, store)
+		viewInHeader := getFromHeader(TRX_VIEW, ctx)
+
+		if hasValue(viewInHeader) && isDifferent(viewInStore, *viewInHeader) {
+			store.Set(VIEW, *viewInHeader)
 			saveStoreRequired = true
 		} else {
-			viewQuery := q.Get("view")
-			if viewQuery != "" && (viewStore == nil || len(*viewStore) == 0 || *viewStore != viewQuery) {
-				store.Set(VIEW, viewQuery)
+			viewInQuery := strings.TrimSpace(q.Get("view"))
+			if hasValue(&viewInQuery) && isDifferent(viewInStore, viewInQuery) {
+				store.Set(VIEW, viewInQuery)
 				saveStoreRequired = true
 			}
 		}
@@ -221,35 +244,18 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 
 		if userDetailsStoreStr == nil || *userDetailsHeaderStr != *userDetailsStoreStr {
 			//log.Print("user Details Header !=  user Details Store, then update it on store")
-			toStore := *userDetailsHeaderStr
-			store.Set(TRX_USER_DETAILS, toStore)
+			store.Set(TRX_USER_DETAILS, *userDetailsHeaderStr)
 			saveStoreRequired = true
 		}
 
 		if saveStoreRequired {
-			store.Save()
+			err := store.Save()
+			if err != nil {
+				return err
+			}
 		}
 		return ctx.Next()
 	}
-}
-
-func getFromStore(key string, store *session.Store) *string {
-
-	viewStoredInt := store.Get(key)
-	if viewStoredInt != nil && len(viewStoredInt.(string)) > 0 {
-		value := viewStoredInt.(string)
-		return &value
-	}
-	return nil
-}
-
-func getFromHeader(key string, ctx *fiber.Ctx) *string {
-	viewHeaderBA := ctx.Request().Header.Peek(key)
-	if viewHeaderBA != nil && len(viewHeaderBA) > 0 {
-		value := string(viewHeaderBA)
-		return &value
-	}
-	return nil
 }
 
 func ConnectionLimiter(maxConnectCount int, expiration time.Duration, skip func(c *fiber.Ctx) bool) fiber.Handler {
