@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const INVALID_ACCESS = "INVALID-ACCESS"
+const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
+const TRX_USER_DETAILS = "TRX_USER_DETAILS"
+const TRX_VIEW = "TRX_VIEW"
+const VIEW = "VIEW"
+
 type Config struct {
 	LoginUrl              string
 	CredentialUrl         string
