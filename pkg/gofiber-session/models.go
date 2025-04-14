@@ -11,6 +11,7 @@ const STORED_COOKIE_NAME = "COOKIE_TRX_CUST_NUM"
 const TRX_USER_DETAILS = "TRX_USER_DETAILS"
 const TRX_VIEW = "TRX_VIEW"
 const VIEW = "VIEW"
+const MODE = "MODE"
 
 type Config struct {
 	LoginUrl              string

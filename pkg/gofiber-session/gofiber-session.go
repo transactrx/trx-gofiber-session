@@ -216,7 +216,7 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 		}
 		saveStoreRequired := false
 
-		//VIEW
+		////VIEW
 		viewInStore, _ := getSessionString(store, VIEW)
 		viewInHeader := getFromHeader(TRX_VIEW, ctx)
 
@@ -229,6 +229,14 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 				store.Set(VIEW, viewInQuery)
 				saveStoreRequired = true
 			}
+		}
+		//VIEW
+		if updateSessionFromSources(store, ctx, q, VIEW, TRX_VIEW) {
+			saveStoreRequired = true
+		}
+		//MODE
+		if updateSessionFromSources(store, ctx, q, MODE, MODE) {
+			saveStoreRequired = true
 		}
 
 		userDetailsStoreStr, userDetailsStoreOk := getSessionString(store, TRX_USER_DETAILS)
@@ -272,4 +280,21 @@ func ConnectionLimiter(maxConnectCount int, expiration time.Duration, skip func(
 	}
 
 	return limiter.New(limiterConfig)
+}
+
+func updateSessionFromSources(store *session.Store, ctx *fiber.Ctx, query url.Values, sessionKey string, headerKey string) bool {
+	currentVal, _ := getSessionString(store, sessionKey)
+
+	if headerVal := getFromHeader(headerKey, ctx); hasValue(headerVal) && isDifferent(currentVal, *headerVal) {
+		store.Set(sessionKey, *headerVal)
+		return true
+	}
+
+	queryVal := strings.TrimSpace(query.Get(strings.ToLower(sessionKey)))
+	if len(queryVal) > 0 && isDifferent(currentVal, queryVal) {
+		store.Set(sessionKey, queryVal)
+		return true
+	}
+
+	return false
 }
