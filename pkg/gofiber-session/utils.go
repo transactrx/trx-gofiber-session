@@ -6,14 +6,15 @@ import (
 	"github.com/gofiber/session/v2"
 	"log"
 	"net/http"
+	"strings"
 )
 
 func hasValue(s *string) bool {
 	return s != nil && len(*s) > 0
 }
 
-func isDifferent(existing *string, newVal string) bool {
-	return existing == nil || len(*existing) == 0 || *existing != newVal
+func isDifferent(existing, newVal string) bool {
+	return len(strings.TrimSpace(existing)) == 0 || existing != newVal
 }
 
 func getFromStore(key string, store *session.Store) *string {
@@ -49,4 +50,16 @@ func unAuthorizedHandler(ctx *fiber.Ctx, messageLog string) error {
 		return err
 	}
 	return fmt.Errorf("Unauthorized Access")
+}
+
+func getSessionString(store *session.Store, key string) (string, bool) {
+	if store == nil {
+		return "", false
+	}
+	val := store.Get(key)
+	str, ok := val.(string)
+	if !ok || len(strings.TrimSpace(str)) == 0 {
+		return "", false
+	}
+	return str, true
 }
