@@ -218,9 +218,9 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 
 		//VIEW
 		viewInStore, _ := getSessionString(store, VIEW)
-		viewInHeader, viewInHeaderOk := getSessionString(store, TRX_VIEW)
+		viewInHeader := getFromHeader(TRX_VIEW, ctx)
 
-		if viewInHeaderOk && isDifferent(viewInStore, viewInHeader) {
+		if hasValue(viewInHeader) && isDifferent(viewInStore, *viewInHeader) {
 			store.Set(VIEW, viewInHeader)
 			saveStoreRequired = true
 		} else {
