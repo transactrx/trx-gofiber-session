@@ -41,6 +41,7 @@ type SessionDetails struct {
 	LastName       string `json:"lastName"`
 	DefaultProfile string `json:"defaultProfile"`
 	AppView        string `json:"appView"`
+	Mode           string `json:"mode"`
 	TrxIsat        string `json:"trxIsat"`
 }
 
