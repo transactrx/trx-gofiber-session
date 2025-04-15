@@ -216,26 +216,8 @@ func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 		}
 		saveStoreRequired := false
 
-		////VIEW
-		viewInStore, _ := getSessionString(store, VIEW)
-		viewInHeader := getFromHeader(TRX_VIEW, ctx)
-
-		if hasValue(viewInHeader) && isDifferent(viewInStore, *viewInHeader) {
-			store.Set(VIEW, viewInHeader)
-			saveStoreRequired = true
-		} else {
-			viewInQuery := strings.TrimSpace(q.Get("view"))
-			if hasValue(&viewInQuery) && isDifferent(viewInStore, viewInQuery) {
-				store.Set(VIEW, viewInQuery)
-				saveStoreRequired = true
-			}
-		}
 		//VIEW
 		if updateSessionFromSources(store, ctx, q, VIEW, TRX_VIEW) {
-			saveStoreRequired = true
-		}
-		//MODE
-		if updateSessionFromSources(store, ctx, q, MODE, MODE) {
 			saveStoreRequired = true
 		}
 
