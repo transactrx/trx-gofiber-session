@@ -43,7 +43,7 @@ func getFromHeader(key string, ctx *fiber.Ctx) *string {
 }
 
 func unAuthorizedHandler(ctx *fiber.Ctx, messageLog string) error {
-	log.Printf(messageLog)
+	log.Printf("%s", messageLog)
 	ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"status": http.StatusForbidden, "code": http.StatusUnauthorized, "message": "Unauthorized Access"})
 	err := ctx.SendStatus(http.StatusUnauthorized)
 	if err != nil {
