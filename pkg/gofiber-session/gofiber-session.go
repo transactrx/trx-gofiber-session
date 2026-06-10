@@ -173,6 +173,23 @@ func AuthRequire(config Config) fiber.Handler {
 
 var openResourceRegexp *regexp.Regexp
 
+// CaptureIDTMiddleware records the proxy-injected TRX_IDT header into the
+// in-process IDT registry on every request, keyed by the gofiber session id.
+// Reusable across any webapp behind the proxy: app.Use(CaptureIDTMiddleware(sess)).
+// No-op when no IDT header is present (IDT off / non-IDT request). Read-only with
+// respect to the session — it only reads store.ID(); it never mutates the session.
+// Register it AFTER AuthorizationProxyCheck so the session cookie is resolvable.
+func CaptureIDTMiddleware(session *session.Session) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		if idt := ReadIDT(ctx); idt != "" && session != nil {
+			if store := session.Get(ctx); store != nil {
+				CaptureIDT(store.ID(), idt)
+			}
+		}
+		return ctx.Next()
+	}
+}
+
 func AuthorizationProxyCheck(session *session.Session) fiber.Handler {
 	var combinedOpenResourcePatternsEnv = os.Getenv("OPEN_RESOURCE_PATTERNS")
 	combinedOpenResourcePatterns := ".*/gxt/.*|.*nocache.*|.*\\.cache\\..*|.*\\/bootstrap\\.min\\..*|angular\\.min\\.js|.*\\/zapatec\\/.*\\..*|.*\\/pdfjs\\/.*\\.js(?:\\?.*)?$|.*\\.(jpg|jpeg|png|gif|svg|woff2|woff|ttf)(?:\\?.*)?$|.*\\.css(?:\\?.*)?$|.*\\.map(?:\\?.*)?$" // .*\.js(?:\?.*)?$
